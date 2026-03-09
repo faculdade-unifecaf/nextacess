@@ -10,10 +10,13 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@types/dotenv": "^6.1.1",
     "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "helmet": "^8.1.0",
-    "pino": "^10.3.1"
+    "pino": "^10.3.1",
+    "postgres": "^3.4.8"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
