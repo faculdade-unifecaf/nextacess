@@ -1,20 +1,28 @@
-import React from 'react';
-import { Bell, Search, Wifi } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, Sun, Moon, MessageSquare } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 
 interface HeaderProps {
   title: string;
   subtitle?: string;
+  onOpenChat: () => void;
 }
 
-export default function Header({ title, subtitle }: HeaderProps) {
-  const { alertas, usuarios } = useAdmin();
-  const pendentes = alertas.filter(a => a.ativo).length;
-  const inadimplentes = usuarios.filter(u => u.status === 'Bloqueado').length;
+export default function Header({ title, subtitle, onOpenChat }: HeaderProps) {
+  const { avisos, visitantes } = useAdmin();
+  const avisosAtivos = avisos.filter(a => a.ativo).length;
+  const aguardando = visitantes.filter(v => v.status === 'Aguardando').length;
 
-  const now = new Date();
-  const hora = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  const data = now.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
+  const [theme, setTheme] = useState<'dark' | 'light'>(
+    () => (localStorage.getItem('theme') as 'dark' | 'light') || 'dark'
+  );
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  };
 
   return (
     <header className="header">
@@ -25,47 +33,35 @@ export default function Header({ title, subtitle }: HeaderProps) {
 
       <div className="header-spacer" />
 
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: '5px 12px', background: 'rgba(34,211,94,0.06)',
-        border: '1px solid rgba(34,211,94,0.14)', borderRadius: 20,
-        fontSize: 11, color: 'var(--green)', fontWeight: 600
-      }}>
-        <div className="glow-dot" style={{ width: 6, height: 6 }} />
-        Online
-      </div>
-
-      <div style={{
-        fontSize: 12, color: 'var(--text-muted)',
-        padding: '5px 12px', background: 'rgba(255,255,255,0.03)',
-        border: '1px solid var(--border)', borderRadius: 20,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3
-      }}>
-        <span style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: 11 }}>{hora}</span>
-        <span style={{ fontSize: 9, textTransform: 'capitalize' }}>{data}</span>
-      </div>
-
-      {inadimplentes > 0 && (
+      {aguardando > 0 && (
         <div style={{
-          padding: '5px 12px', background: 'rgba(255,58,58,0.07)',
-          border: '1px solid rgba(255,58,58,0.18)', borderRadius: 20,
-          fontSize: 11, color: 'var(--red)', fontWeight: 700,
-          display: 'flex', alignItems: 'center', gap: 6
+          padding: '4px 12px',
+          background: 'rgba(76,158,255,0.08)',
+          border: '1px solid rgba(76,158,255,0.15)',
+          borderRadius: 20,
+          fontSize: 11, color: 'var(--blue)', fontWeight: 600,
         }}>
-          ⚠️ {inadimplentes} inadimplente{inadimplentes > 1 ? 's' : ''}
+          {aguardando} visitante{aguardando > 1 ? 's' : ''} aguardando
         </div>
       )}
 
+      <button className="btn btn-ghost btn-icon" onClick={toggleTheme} title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}>
+        {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+      </button>
+
+      <button className="btn btn-ghost btn-icon" onClick={onOpenChat} title="Chat com administradores" style={{ position: 'relative' }}>
+        <MessageSquare size={16} />
+      </button>
+
       <button className="btn btn-ghost btn-icon" style={{ position: 'relative' }}>
-        <Bell size={17} />
-        {pendentes > 0 && (
+        <Bell size={16} />
+        {avisosAtivos > 0 && (
           <span style={{
-            position: 'absolute', top: 4, right: 4,
-            width: 7, height: 7,
-            background: 'var(--red)',
+            position: 'absolute', top: 5, right: 5,
+            width: 6, height: 6,
+            background: 'var(--blue)',
             borderRadius: '50%',
             border: '1.5px solid var(--bg-base)',
-            boxShadow: '0 0 6px var(--red)',
           }} />
         )}
       </button>

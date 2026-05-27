@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import * as c from '../controllers/funcionarios.controller';
+const r = Router();
+r.get('/',              c.list);
+r.get('/:id',           c.get);
+r.post('/',             c.create);
+r.put('/:id',           c.update);
+r.patch('/:id/status',  c.updateStatus);
+r.delete('/:id',        c.remove);
+export default r;

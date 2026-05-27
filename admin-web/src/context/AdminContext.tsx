@@ -1,141 +1,304 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import {
-  Usuario, Plano, Matricula, Financeiro, Professor, Alerta,
-  usuarios as initUsuarios,
-  planos as initPlanos,
-  matriculas as initMatriculas,
-  financeiro as initFinanceiro,
-  professores as initProfessores,
-  alertas as initAlertas,
-} from '../data/mockData';
-
-function genId() { return Math.random().toString(36).slice(2, 9); }
-
-const COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#ec4899','#06b6d4','#f97316','#84cc16'];
-let colorIdx = 0;
-const nextColor = () => COLORS[(colorIdx++) % COLORS.length];
-
-interface AdminContextType {
-  // Data
-  usuarios: Usuario[];
-  planos: Plano[];
-  matriculas: Matricula[];
-  financeiro: Financeiro[];
-  professores: Professor[];
-  alertas: Alerta[];
-
-  // Usuários CRUD
-  addUsuario: (data: Omit<Usuario, 'id' | 'avatarColor'>, planoId: string) => void;
-  updateUsuario: (id: string, data: Partial<Usuario>) => void;
-  removeUsuario: (id: string) => void;
-  setStatusUsuario: (id: string, status: Usuario['status']) => void;
-
-  // Matrículas
-  addMatricula: (data: Omit<Matricula, 'id'>) => void;
-  updateMatricula: (id: string, data: Partial<Matricula>) => void;
-
-  // Planos CRUD
-  addPlano: (data: Omit<Plano, 'id'>) => void;
-  updatePlano: (id: string, data: Partial<Plano>) => void;
-  removePlano: (id: string) => void;
-
-  // Professores CRUD
-  addProfessor: (data: Omit<Professor, 'id' | 'avatarColor'>) => void;
-  updateProfessor: (id: string, data: Partial<Professor>) => void;
-  toggleProfessorStatus: (id: string) => void;
-
-  // Alertas
-  addAlerta: (data: Omit<Alerta, 'id' | 'data_criacao'>) => void;
-  updateAlerta: (id: string, data: Partial<Alerta>) => void;
-  removeAlerta: (id: string) => void;
-}
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import { Empresa, Funcionario, Visitante, Aviso, Acesso } from '../data/mockData';
+import { AdminContextType, ApiError } from './types';
+import { empresasService } from '../services/empresasService';
+import { funcionariosService } from '../services/funcionariosService';
+import { visitantesService } from '../services/visitantesService';
+import { avisosService } from '../services/avisosService';
+import { acessosService } from '../services/acessosService';
 
 const AdminContext = createContext<AdminContextType | null>(null);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
-  const [usuarios,    setUsuarios]    = useState<Usuario[]>(initUsuarios);
-  const [planos,      setPlanos]      = useState<Plano[]>(initPlanos);
-  const [matriculas,  setMatriculas]  = useState<Matricula[]>(initMatriculas);
-  const [financeiroList, setFinanceiro] = useState<Financeiro[]>(initFinanceiro);
-  const [professores, setProfessores] = useState<Professor[]>(initProfessores);
-  const [alertas,     setAlertas]     = useState<Alerta[]>(initAlertas);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+  const [visitantes, setVisitantes] = useState<Visitante[]>([]);
+  const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [acessos, setAcessos] = useState<Acesso[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // ── Usuários ──────────────────────────────────────────────────────────────
-  const addUsuario = (data: Omit<Usuario, 'id' | 'avatarColor'>, planoId: string) => {
-    const novo: Usuario = { ...data, id: genId(), avatarColor: nextColor() };
-    setUsuarios(prev => [novo, ...prev]);
+  const clearError = useCallback(() => setError(null), []);
 
-    const plano = planos.find(p => p.id === planoId);
-    if (plano) {
-      const hoje = new Date().toISOString().slice(0, 10);
-      const fim = new Date(Date.now() + plano.duracao_dias * 86400000).toISOString().slice(0, 10);
-      const mat: Matricula = { id: genId(), usuario_id: novo.id, plano_id: planoId, data_inicio: hoje, data_fim: fim, status: 'Ativa' };
-      setMatriculas(prev => [mat, ...prev]);
-      const fin: Financeiro = { id: genId(), usuario_id: novo.id, matricula_id: mat.id, valor: plano.valor, data_vencimento: fim, status: 'Pendente' };
-      setFinanceiro(prev => [fin, ...prev]);
+  const refreshEmpresas = useCallback(async () => {
+    try {
+      clearError();
+      const data = await empresasService.getAll();
+      setEmpresas(data);
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao carregar empresas');
+    }
+  }, [clearError]);
+
+  const refreshFuncionarios = useCallback(async () => {
+    try {
+      clearError();
+      const data = await funcionariosService.getAll();
+      setFuncionarios(data);
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao carregar funcionários');
+    }
+  }, [clearError]);
+
+  const refreshVisitantes = useCallback(async () => {
+    try {
+      clearError();
+      const data = await visitantesService.getAll();
+      setVisitantes(data);
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao carregar visitantes');
+    }
+  }, [clearError]);
+
+  const refreshAvisos = useCallback(async () => {
+    try {
+      clearError();
+      const data = await avisosService.getAll();
+      setAvisos(data);
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao carregar avisos');
+    }
+  }, [clearError]);
+
+  const refreshAcessos = useCallback(async () => {
+    try {
+      clearError();
+      const data = await acessosService.getAll();
+      setAcessos(data);
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao carregar acessos');
+    }
+  }, [clearError]);
+
+  const refreshAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        refreshEmpresas(),
+        refreshFuncionarios(),
+        refreshVisitantes(),
+        refreshAvisos(),
+        refreshAcessos(),
+      ]);
+    } catch {
+      setError('Erro ao carregar dados');
+    } finally {
+      setLoading(false);
+    }
+  }, [refreshEmpresas, refreshFuncionarios, refreshVisitantes, refreshAvisos, refreshAcessos]);
+
+  useEffect(() => {
+    if (localStorage.getItem('token')) refreshAll();
+  }, [refreshAll]);
+
+  const addEmpresa = async (data: Omit<Empresa, 'id' | 'avatarColor'>) => {
+    try {
+      clearError();
+      await empresasService.create(data);
+      await refreshEmpresas();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao criar empresa');
+      throw err;
     }
   };
 
-  const updateUsuario = (id: string, data: Partial<Usuario>) =>
-    setUsuarios(prev => prev.map(u => u.id === id ? { ...u, ...data } : u));
-
-  const removeUsuario = (id: string) => {
-    setUsuarios(prev => prev.filter(u => u.id !== id));
-    setMatriculas(prev => prev.filter(m => m.usuario_id !== id));
-    setFinanceiro(prev => prev.filter(f => f.usuario_id !== id));
+  const updateEmpresa = async (id: string, data: Partial<Empresa>) => {
+    try {
+      clearError();
+      await empresasService.update(id, data);
+      await refreshEmpresas();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao atualizar empresa');
+      throw err;
+    }
   };
 
-  const setStatusUsuario = (id: string, status: Usuario['status']) =>
-    setUsuarios(prev => prev.map(u => u.id === id ? { ...u, status } : u));
+  const removeEmpresa = async (id: string) => {
+    try {
+      clearError();
+      await empresasService.delete(id);
+      await refreshEmpresas();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao remover empresa');
+      throw err;
+    }
+  };
 
-  // ── Matrículas ────────────────────────────────────────────────────────────
-  const addMatricula = (data: Omit<Matricula, 'id'>) =>
-    setMatriculas(prev => [{ ...data, id: genId() }, ...prev]);
+  const addFuncionario = async (data: Omit<Funcionario, 'id' | 'avatarColor'>) => {
+    try {
+      clearError();
+      await funcionariosService.create(data);
+      await refreshFuncionarios();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao criar funcionário');
+      throw err;
+    }
+  };
 
-  const updateMatricula = (id: string, data: Partial<Matricula>) =>
-    setMatriculas(prev => prev.map(m => m.id === id ? { ...m, ...data } : m));
+  const updateFuncionario = async (id: string, data: Partial<Funcionario>) => {
+    try {
+      clearError();
+      await funcionariosService.update(id, data);
+      await refreshFuncionarios();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao atualizar funcionário');
+      throw err;
+    }
+  };
 
-  // ── Planos ────────────────────────────────────────────────────────────────
-  const addPlano = (data: Omit<Plano, 'id'>) =>
-    setPlanos(prev => [{ ...data, id: genId() }, ...prev]);
+  const removeFuncionario = async (id: string) => {
+    try {
+      clearError();
+      await funcionariosService.delete(id);
+      await refreshFuncionarios();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao remover funcionário');
+      throw err;
+    }
+  };
 
-  const updatePlano = (id: string, data: Partial<Plano>) =>
-    setPlanos(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
+  const setStatusFuncionario = async (id: string, status: Funcionario['status']) => {
+    try {
+      clearError();
+      await funcionariosService.updateStatus(id, status);
+      await refreshFuncionarios();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao atualizar status');
+      throw err;
+    }
+  };
 
-  const removePlano = (id: string) =>
-    setPlanos(prev => prev.filter(p => p.id !== id));
+  const addVisitante = async (data: Omit<Visitante, 'id' | 'data_cadastro'>) => {
+    try {
+      clearError();
+      await visitantesService.create(data);
+      await refreshVisitantes();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao criar visitante');
+      throw err;
+    }
+  };
 
-  // ── Professores ───────────────────────────────────────────────────────────
-  const addProfessor = (data: Omit<Professor, 'id' | 'avatarColor'>) =>
-    setProfessores(prev => [{ ...data, id: genId(), avatarColor: nextColor() }, ...prev]);
+  const updateVisitante = async (id: string, data: Partial<Visitante>) => {
+    try {
+      clearError();
+      await visitantesService.update(id, data);
+      await refreshVisitantes();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao atualizar visitante');
+      throw err;
+    }
+  };
 
-  const updateProfessor = (id: string, data: Partial<Professor>) =>
-    setProfessores(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
+  const removeVisitante = async (id: string) => {
+    try {
+      clearError();
+      await visitantesService.delete(id);
+      await refreshVisitantes();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao remover visitante');
+      throw err;
+    }
+  };
 
-  const toggleProfessorStatus = (id: string) =>
-    setProfessores(prev => prev.map(p =>
-      p.id === id ? { ...p, status: p.status === 'Ativo' ? 'Inativo' : 'Ativo' } : p
-    ));
+  const aprovarVisitante = async (id: string, autorizado_por: string) => {
+    try {
+      clearError();
+      await visitantesService.approve(id, autorizado_por);
+      await refreshVisitantes();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao aprovar visitante');
+      throw err;
+    }
+  };
 
-  // ── Alertas ───────────────────────────────────────────────────────────────
-  const addAlerta = (data: Omit<Alerta, 'id' | 'data_criacao'>) =>
-    setAlertas(prev => [{ ...data, id: genId(), data_criacao: new Date().toISOString().slice(0, 10) }, ...prev]);
+  const negarVisitante = async (id: string) => {
+    try {
+      clearError();
+      await visitantesService.deny(id);
+      await refreshVisitantes();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao negar visitante');
+      throw err;
+    }
+  };
 
-  const updateAlerta = (id: string, data: Partial<Alerta>) =>
-    setAlertas(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
+  const addAviso = async (data: Omit<Aviso, 'id' | 'data_criacao'>) => {
+    try {
+      clearError();
+      await avisosService.create(data);
+      await refreshAvisos();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao criar aviso');
+      throw err;
+    }
+  };
 
-  const removeAlerta = (id: string) =>
-    setAlertas(prev => prev.filter(a => a.id !== id));
+  const updateAviso = async (id: string, data: Partial<Aviso>) => {
+    try {
+      clearError();
+      await avisosService.update(id, data);
+      await refreshAvisos();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao atualizar aviso');
+      throw err;
+    }
+  };
+
+  const removeAviso = async (id: string) => {
+    try {
+      clearError();
+      await avisosService.delete(id);
+      await refreshAvisos();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao remover aviso');
+      throw err;
+    }
+  };
+
+  const addAcesso = async (data: Omit<Acesso, 'id'>) => {
+    try {
+      clearError();
+      await acessosService.create(data);
+      await refreshAcessos();
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.message || 'Erro ao registrar acesso');
+      throw err;
+    }
+  };
+
+  const value: AdminContextType = {
+    empresas, funcionarios, visitantes, avisos, acessos, loading, error,
+    addEmpresa, updateEmpresa, removeEmpresa, refreshEmpresas,
+    addFuncionario, updateFuncionario, removeFuncionario, setStatusFuncionario, refreshFuncionarios,
+    addVisitante, updateVisitante, removeVisitante, aprovarVisitante, negarVisitante, refreshVisitantes,
+    addAviso, updateAviso, removeAviso, refreshAvisos,
+    addAcesso, refreshAcessos, refreshAll,
+  };
 
   return (
-    <AdminContext.Provider value={{
-      usuarios, planos, matriculas, financeiro: financeiroList, professores, alertas,
-      addUsuario, updateUsuario, removeUsuario, setStatusUsuario,
-      addMatricula, updateMatricula,
-      addPlano, updatePlano, removePlano,
-      addProfessor, updateProfessor, toggleProfessorStatus,
-      addAlerta, updateAlerta, removeAlerta,
-    }}>
+    <AdminContext.Provider value={value}>
       {children}
     </AdminContext.Provider>
   );

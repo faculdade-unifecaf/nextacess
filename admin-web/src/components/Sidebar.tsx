@@ -1,45 +1,46 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import {
-  LayoutDashboard, Users, GraduationCap, CreditCard,
-  DollarSign, Bell, LogOut, Dumbbell, ChevronRight,
-} from 'lucide-react';
+import { LayoutDashboard, Building2, Users, UserPlus, Bell, ShieldCheck, LogOut, Lock } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
+import { authService } from '../services/authService';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/alunos', icon: Users, label: 'Alunos' },
-  { to: '/professores', icon: GraduationCap, label: 'Professores' },
-  { to: '/planos', icon: CreditCard, label: 'Planos' },
-  { to: '/financeiro', icon: DollarSign, label: 'Financeiro' },
-  { to: '/alertas', icon: Bell, label: 'Alertas' },
+  { to: '/empresas', icon: Building2, label: 'Empresas' },
+  { to: '/funcionarios', icon: Users, label: 'Funcionários' },
+  { to: '/visitantes', icon: UserPlus, label: 'Visitantes' },
+  { to: '/avisos', icon: Bell, label: 'Avisos' },
+  { to: '/acessos', icon: ShieldCheck, label: 'Acessos' },
 ];
 
 export default function Sidebar() {
   const navigate = useNavigate();
-  const { usuarios, alertas } = useAdmin();
+  const { visitantes, avisos } = useAdmin();
 
-  const inadimplentes = usuarios.filter(u => u.status === 'Bloqueado').length;
-  const alertasNovos = alertas.filter(a => a.ativo).length;
+  const aguardando = visitantes.filter(v => v.status === 'Aguardando').length;
+  const avisosAtivos = avisos.filter(a => a.ativo).length;
 
   const badges: Record<string, number> = {
-    '/financeiro': inadimplentes,
-    '/alertas': alertasNovos,
+    '/visitantes': aguardando,
+    '/avisos': avisosAtivos,
   };
 
   const handleLogout = () => {
-    if (confirm('Deseja sair do Painel Admin?')) navigate('/login');
+    if (confirm('Deseja sair do sistema?')) {
+      authService.logout();
+      navigate('/login', { replace: true });
+    }
   };
 
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">
-          <Dumbbell size={19} color="#fff" />
+          <Lock size={19} color="#fff" />
         </div>
         <div>
-          <div className="sidebar-logo-text">NEXUS</div>
-          <div className="sidebar-logo-sub">FITNESS ADMIN</div>
+          <div className="sidebar-logo-text">NEXTACCESS</div>
+          <div className="sidebar-logo-sub">RECEPÇÃO</div>
         </div>
       </div>
 
@@ -69,16 +70,16 @@ export default function Sidebar() {
         }}>
           <div style={{
             width: 30, height: 30, borderRadius: 8,
-            background: 'linear-gradient(135deg, rgba(255,58,58,0.2), rgba(255,58,58,0.08))',
-            border: '1px solid rgba(255,58,58,0.25)',
+            background: 'linear-gradient(135deg, rgba(76,158,255,0.2), rgba(76,158,255,0.08))',
+            border: '1px solid rgba(76,158,255,0.25)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 800, color: 'var(--red)',
+            fontSize: 12, fontWeight: 800, color: 'var(--blue)',
           }}>
-            A
+            R
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Administrador</div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>admin@nexus.com</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Recepcionista</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>recepcao@nextaccess.com</div>
           </div>
         </div>
         <button

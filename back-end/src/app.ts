@@ -1,14 +1,16 @@
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import routes from './routes';
 
 const app = express();
 
-//Configuração básica para iniciar o app.ts
-app.use(cors({ origin: "*" }));
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(helmet());
 
-//Chamar as rotas do index.ts
+app.use('/api', routes);
+
+app.use((_: any, res: any) => res.status(404).json({ error: 'Rota não encontrada' }));
 
 export default app;

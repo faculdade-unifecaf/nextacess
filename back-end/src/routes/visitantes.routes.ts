@@ -1,0 +1,11 @@
+import { Router } from 'express';
+import * as c from '../controllers/visitantes.controller';
+const r = Router();
+r.get('/',                  c.list);
+r.get('/:id',               c.get);
+r.post('/',                 c.create);
+r.put('/:id',               c.update);
+r.patch('/:id/aprovar',     c.aprovar);
+r.patch('/:id/negar',       c.negar);
+r.delete('/:id',            c.remove);
+export default r;
