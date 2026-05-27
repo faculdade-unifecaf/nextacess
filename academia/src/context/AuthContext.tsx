@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DeviceEventEmitter } from 'react-native';
 import api from '../../services/api';
 
 export type Role = 'admin' | 'funcionario' | 'visitante';
@@ -36,6 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (userVal) setUser(JSON.parse(userVal));
       setIsLoading(false);
     });
+  }, []);
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('auth:logout', () => setUser(null));
+    return () => sub.remove();
   }, []);
 
   const login = async (email: string, cpf: string) => {

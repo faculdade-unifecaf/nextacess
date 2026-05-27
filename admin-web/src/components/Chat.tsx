@@ -21,7 +21,7 @@ export default function Chat({ isOpen, onClose }: ChatProps) {
       const data = await chatService.getMensagens(empresaId);
       setMessages(prev => ({ ...prev, [empresaId]: data }));
       setLastMsg(prev => ({ ...prev, [empresaId]: data[data.length - 1] ?? null }));
-    } catch {}
+    } catch { }
   }, []);
 
   // Carrega e polling ao selecionar empresa
@@ -49,7 +49,10 @@ export default function Chat({ isOpen, onClose }: ChatProps) {
     try {
       await chatService.sendMensagem(selectedEmpresa, texto);
       await loadMensagens(selectedEmpresa);
-    } catch {}
+    } catch (e: any) {
+      console.error('[Chat] erro ao enviar:', e?.response?.data ?? e?.message);
+      setInput(texto); // devolve o texto se falhou
+    }
   };
 
   const getAdminEmpresa = (empresaId: string) =>
@@ -115,7 +118,7 @@ export default function Chat({ isOpen, onClose }: ChatProps) {
         {!selectedEmpresa ? (
           <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
             {empresas.filter(e => e.status === 'Ativa').map(e => {
-              const last = getLastMsg(e.id);
+              const last = lastMsg[e.id];
               const adminNome = getAdminEmpresa(e.id);
               return (
                 <button

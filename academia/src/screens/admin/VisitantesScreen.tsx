@@ -31,8 +31,12 @@ export default function VisitantesScreen() {
     Alert.alert('Aprovar visitante', `Liberar acesso para ${v.nome_completo}?`, [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Aprovar', onPress: async () => {
-        await api.patch(`/visitantes/${v.id}/aprovar`, { autorizado_por: user!.nome });
-        load();
+        try {
+          await api.patch(`/visitantes/${v.id}/aprovar`, { autorizado_por: user?.nome ?? 'Admin' });
+          load();
+        } catch (e: any) {
+          Alert.alert('Erro', e?.response?.data?.error ?? 'Falha ao aprovar visitante');
+        }
       }},
     ]);
 
@@ -40,8 +44,12 @@ export default function VisitantesScreen() {
     Alert.alert('Negar visitante', `Negar acesso para ${v.nome_completo}?`, [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Negar', style: 'destructive', onPress: async () => {
-        await api.patch(`/visitantes/${v.id}/negar`);
-        load();
+        try {
+          await api.patch(`/visitantes/${v.id}/negar`);
+          load();
+        } catch (e: any) {
+          Alert.alert('Erro', e?.response?.data?.error ?? 'Falha ao negar visitante');
+        }
       }},
     ]);
 
