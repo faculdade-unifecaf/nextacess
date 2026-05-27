@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import { Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useAccessResult } from '../../hooks/useAccessResult';
+import AccessOverlay from '../../components/AccessOverlay';
 import { C } from '../../../constants/theme';
 
 function useRotatingToken(userId: string) {
@@ -28,6 +30,7 @@ function useRotatingToken(userId: string) {
 
 export default function VisitanteHomeScreen() {
   const { user, refreshVisitanteStatus } = useAuth();
+  const accessResult = useAccessResult(user?.id);
   const [refreshing, setRefreshing]      = useState(false);
 
   if (!user) return null;
@@ -55,6 +58,7 @@ export default function VisitanteHomeScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
+      {accessResult && <AccessOverlay result={accessResult} />}
       <View style={s.header}>
         <Text style={s.title}>Olá, {user.nome.split(' ')[0]}</Text>
         <TouchableOpacity onPress={doRefresh} disabled={refreshing}>
@@ -75,7 +79,7 @@ export default function VisitanteHomeScreen() {
           <View style={s.qrCard}>
             <Text style={s.qrLabel}>QR Code de Acesso</Text>
             <View style={s.qrWrap}>
-              {token ? <QRCode value={token} size={200} color={C.text} backgroundColor={C.surface} /> : <ActivityIndicator color={C.blue} />}
+              {token ? <QRCode value={token} size={240} color="#000000" backgroundColor="#ffffff" /> : <ActivityIndicator color={C.blue} />}
             </View>
             <View style={s.timerRow}>
               <View style={s.timerBar}>
