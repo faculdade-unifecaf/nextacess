@@ -1,32 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, ArrowLeft, MessageSquare } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
-
-interface Message {
-  id: string;
-  from: 'recepcao' | 'admin';
-  text: string;
-  time: string;
-}
-
-const mockMsgs: Record<string, Message[]> = {
-  e1: [
-    { id: '1', from: 'admin', text: 'Bom dia! Tenho um visitante chegando às 10h, chama-se Gabriel Moura.', time: '09:45' },
-    { id: '2', from: 'recepcao', text: 'Certo! Já cadastrei ele aqui, aguardando liberação do senhor.', time: '09:47' },
-    { id: '3', from: 'admin', text: 'Pode aprovar, ele está autorizado.', time: '09:48' },
-    { id: '4', from: 'recepcao', text: 'Aprovado! QR Code gerado para ele.', time: '09:49' },
-  ],
-  e2: [
-    { id: '1', from: 'recepcao', text: 'Boa tarde, Fernanda. Há um visitante aguardando liberação para o 5º andar.', time: '13:30' },
-    { id: '2', from: 'admin', text: 'Pode liberar, é da empresa parceira.', time: '13:35' },
-  ],
-  e3: [],
-  e4: [
-    { id: '1', from: 'admin', text: 'Preciso bloquear o acesso do Lucas Ferreira temporariamente.', time: '11:20' },
-    { id: '2', from: 'recepcao', text: 'Feito! Credencial bloqueada no sistema.', time: '11:22' },
-  ],
-  e5: [],
-};
+import { chatService, type Mensagem } from '../services/chatService';
 
 interface ChatProps {
   isOpen: boolean;
@@ -36,29 +11,52 @@ interface ChatProps {
 export default function Chat({ isOpen, onClose }: ChatProps) {
   const { empresas, funcionarios } = useAdmin();
   const [selectedEmpresa, setSelectedEmpresa] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Record<string, Message[]>>(mockMsgs);
+  const [messages, setMessages] = useState<Record<string, Mensagem[]>>({});
+  const [lastMsg, setLastMsg] = useState<Record<string, Mensagem | null>>({});
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const loadMensagens = useCallback(async (empresaId: string) => {
+    try {
+      const data = await chatService.getMensagens(empresaId);
+      setMessages(prev => ({ ...prev, [empresaId]: data }));
+      setLastMsg(prev => ({ ...prev, [empresaId]: data[data.length - 1] ?? null }));
+    } catch { }
+  }, []);
+
+  // Carrega e polling ao selecionar empresa
+  useEffect(() => {
+    if (!selectedEmpresa) return;
+    loadMensagens(selectedEmpresa);
+    const t = setInterval(() => loadMensagens(selectedEmpresa), 4000);
+    return () => clearInterval(t);
+  }, [selectedEmpresa, loadMensagens]);
+
+  // Pré-carrega última mensagem de cada empresa quando painel abre
+  useEffect(() => {
+    if (!isOpen) return;
+    empresas.filter(e => e.status === 'Ativa').forEach(e => loadMensagens(e.id));
+  }, [isOpen, empresas, loadMensagens]);
 
   useEffect(() => {
     if (selectedEmpresa) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, selectedEmpresa]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!input.trim() || !selectedEmpresa) return;
-    const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const msg: Message = { id: Date.now().toString(), from: 'recepcao', text: input.trim(), time: now };
-    setMessages(prev => ({ ...prev, [selectedEmpresa]: [...(prev[selectedEmpresa] || []), msg] }));
+    const texto = input.trim();
     setInput('');
+    try {
+      await chatService.sendMensagem(selectedEmpresa, texto);
+      await loadMensagens(selectedEmpresa);
+    } catch (e: any) {
+      console.error('[Chat] erro ao enviar:', e?.response?.data ?? e?.message);
+      setInput(texto); // devolve o texto se falhou
+    }
   };
 
   const getAdminEmpresa = (empresaId: string) =>
     funcionarios.find(f => f.empresa_id === empresaId && f.role === 'admin')?.nome_completo ?? 'Administrador';
-
-  const getLastMsg = (empresaId: string) => {
-    const msgs = messages[empresaId];
-    return msgs && msgs.length > 0 ? msgs[msgs.length - 1] : null;
-  };
 
   const empresa = empresas.find(e => e.id === selectedEmpresa);
   const conv = selectedEmpresa ? (messages[selectedEmpresa] || []) : [];
@@ -120,7 +118,7 @@ export default function Chat({ isOpen, onClose }: ChatProps) {
         {!selectedEmpresa ? (
           <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
             {empresas.filter(e => e.status === 'Ativa').map(e => {
-              const last = getLastMsg(e.id);
+              const last = lastMsg[e.id];
               const adminNome = getAdminEmpresa(e.id);
               return (
                 <button
@@ -149,10 +147,10 @@ export default function Chat({ isOpen, onClose }: ChatProps) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
                       <span style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{e.nome}</span>
-                      {last && <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>{last.time}</span>}
+                      {lastMsg[e.id] && <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>{new Date(lastMsg[e.id]!.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {last ? `${last.from === 'recepcao' ? 'Você: ' : `${adminNome.split(' ')[0]}: `}${last.text}` : 'Iniciar conversa...'}
+                      {lastMsg[e.id] ? `${lastMsg[e.id]!.from_role === 'recepcionista' ? 'Você: ' : `${adminNome.split(' ')[0]}: `}${lastMsg[e.id]!.texto}` : 'Iniciar conversa...'}
                     </div>
                   </div>
                 </button>
@@ -167,28 +165,25 @@ export default function Chat({ isOpen, onClose }: ChatProps) {
                   Nenhuma mensagem ainda.<br />Inicie a conversa.
                 </div>
               )}
-              {conv.map(msg => (
-                <div key={msg.id} style={{
-                  display: 'flex',
-                  justifyContent: msg.from === 'recepcao' ? 'flex-end' : 'flex-start',
-                }}>
-                  <div style={{
-                    maxWidth: '75%',
-                    padding: '9px 13px',
-                    borderRadius: msg.from === 'recepcao' ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
-                    background: msg.from === 'recepcao'
-                      ? 'linear-gradient(135deg, var(--blue), #1e7ad1)'
-                      : 'var(--bg-elevated)',
-                    color: msg.from === 'recepcao' ? '#fff' : 'var(--text-primary)',
-                    fontSize: 13,
-                    lineHeight: 1.45,
-                    border: msg.from !== 'recepcao' ? '1px solid var(--border)' : 'none',
-                  }}>
-                    <div>{msg.text}</div>
-                    <div style={{ fontSize: 10, opacity: 0.65, marginTop: 4, textAlign: 'right' }}>{msg.time}</div>
+              {conv.map(msg => {
+                const mine = msg.from_role === 'recepcionista';
+                const hora = new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                return (
+                  <div key={msg.id} style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                    <div style={{
+                      maxWidth: '75%', padding: '9px 13px',
+                      borderRadius: mine ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
+                      background: mine ? 'linear-gradient(135deg, var(--blue), #1e7ad1)' : 'var(--bg-elevated)',
+                      color: mine ? '#fff' : 'var(--text-primary)',
+                      fontSize: 13, lineHeight: 1.45,
+                      border: !mine ? '1px solid var(--border)' : 'none',
+                    }}>
+                      <div>{msg.texto}</div>
+                      <div style={{ fontSize: 10, opacity: 0.65, marginTop: 4, textAlign: 'right' }}>{hora}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
 

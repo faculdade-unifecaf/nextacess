@@ -2,24 +2,20 @@ import api from './api';
 
 export interface Mensagem {
   id: string;
-  usuario_id: string;
-  usuario_nome: string;
-  conteudo: string;
-  data_hora: string;
+  empresa_id: string;
+  from_role: string;
+  texto: string;
+  created_at: string;
 }
 
 export const chatService = {
-  async getMessages(limit: number = 50): Promise<Mensagem[]> {
-    const response = await api.get('/chat/messages', { params: { limit } });
-    return response.data;
+  async getMensagens(empresaId: string): Promise<Mensagem[]> {
+    const { data } = await api.get(`/chat/${empresaId}`);
+    return data;
   },
 
-  async sendMessage(conteudo: string): Promise<Mensagem> {
-    const response = await api.post('/chat/messages', { conteudo });
-    return response.data;
-  },
-
-  async deleteMessage(id: string): Promise<void> {
-    await api.delete(`/chat/messages/${id}`);
+  async sendMensagem(empresaId: string, texto: string): Promise<Mensagem> {
+    const { data } = await api.post(`/chat/${empresaId}`, { from_role: 'recepcionista', texto });
+    return data;
   },
 };
