@@ -3,6 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { AuthProvider } from './src/context/AuthContext';
+import { NotificationsProvider } from './src/context/NotificationsContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
@@ -37,7 +38,9 @@ export default function App() {
   return (
     <SafeAreaProvider onLayout={onLayoutRoot}>
       <AuthProvider>
-        <AppNavigator />
+        <NotificationsProvider>
+          <AppNavigator />
+        </NotificationsProvider>
         {showOnboarding && <OnboardingScreen onDone={onOnboardingDone} />}
         {showSplash && <SplashScreen onDone={onSplashDone} />}
       </AuthProvider>

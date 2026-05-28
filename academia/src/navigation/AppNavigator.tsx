@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { QrCode, UserPlus, Bell, MessageSquare, User } from 'lucide-react-native';
 
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationsContext';
 import { C } from '../../constants/theme';
 
 import LoginScreen           from '../screens/LoginScreen';
@@ -26,38 +27,91 @@ const TAB_OPTS = {
     backgroundColor: C.surface,
     borderTopColor: C.border,
     borderTopWidth: 1,
-    height: 68,
-    paddingBottom: 12,
-    paddingTop: 8,
-    elevation: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 12,
+    height: 64,
+    paddingBottom: 10,
+    paddingTop: 6,
   },
   tabBarActiveTintColor:   C.blue,
   tabBarInactiveTintColor: C.muted,
   tabBarLabelStyle: { fontSize: 10, fontWeight: '600' as const },
+  tabBarBadgeStyle: {
+    backgroundColor: '#ef4444',
+    fontSize: 10,
+    minWidth: 16,
+    height: 16,
+    lineHeight: 16,
+  },
 };
 
 function AdminTabs() {
+  const { visitantesAguardando, chatNaoLido, avisosNaoLido, markChatRead, markAvisosRead } = useNotifications();
+
   return (
     <Tab.Navigator screenOptions={TAB_OPTS}>
-      <Tab.Screen name="Acesso"     component={AdminHomeScreen}       options={{ tabBarLabel: 'Acesso',     tabBarIcon: ({ color }) => <QrCode      color={color} size={22} /> }} />
-      <Tab.Screen name="Visitantes" component={AdminVisitantesScreen} options={{ tabBarLabel: 'Visitantes', tabBarIcon: ({ color }) => <UserPlus    color={color} size={22} /> }} />
-      <Tab.Screen name="Avisos"     component={AvisosScreen}          options={{ tabBarLabel: 'Avisos',     tabBarIcon: ({ color }) => <Bell        color={color} size={22} /> }} />
-      <Tab.Screen name="Chat"       component={AdminChatScreen}       options={{ tabBarLabel: 'Chat',       tabBarIcon: ({ color }) => <MessageSquare color={color} size={22} /> }} />
-      <Tab.Screen name="Perfil"     component={PerfilScreen}          options={{ tabBarLabel: 'Perfil',     tabBarIcon: ({ color }) => <User        color={color} size={22} /> }} />
+      <Tab.Screen
+        name="Acesso"
+        component={AdminHomeScreen}
+        options={{ tabBarIcon: ({ color }) => <QrCode color={color} size={22} /> }}
+      />
+      <Tab.Screen
+        name="Visitantes"
+        component={AdminVisitantesScreen}
+        options={{
+          tabBarIcon: ({ color }) => <UserPlus color={color} size={22} />,
+          tabBarBadge: visitantesAguardando > 0 ? visitantesAguardando : undefined,
+        }}
+      />
+      <Tab.Screen
+        name="Avisos"
+        component={AvisosScreen}
+        listeners={{ focus: () => markAvisosRead() }}
+        options={{
+          tabBarIcon: ({ color }) => <Bell color={color} size={22} />,
+          tabBarBadge: avisosNaoLido ? '' : undefined,
+        }}
+      />
+      <Tab.Screen
+        name="Chat"
+        component={AdminChatScreen}
+        listeners={{ focus: () => markChatRead() }}
+        options={{
+          tabBarIcon: ({ color }) => <MessageSquare color={color} size={22} />,
+          tabBarBadge: chatNaoLido ? '' : undefined,
+        }}
+      />
+      <Tab.Screen
+        name="Perfil"
+        component={PerfilScreen}
+        options={{ tabBarIcon: ({ color }) => <User color={color} size={22} /> }}
+      />
     </Tab.Navigator>
   );
 }
 
 function FuncTabs() {
+  const { avisosNaoLido, markAvisosRead } = useNotifications();
+
   return (
     <Tab.Navigator screenOptions={TAB_OPTS}>
-      <Tab.Screen name="Acesso" component={FuncHomeScreen} options={{ tabBarLabel: 'Acesso', tabBarIcon: ({ color }) => <QrCode color={color} size={22} /> }} />
-      <Tab.Screen name="Avisos" component={AvisosScreen}   options={{ tabBarLabel: 'Avisos', tabBarIcon: ({ color }) => <Bell   color={color} size={22} /> }} />
-      <Tab.Screen name="Perfil" component={PerfilScreen}   options={{ tabBarLabel: 'Perfil', tabBarIcon: ({ color }) => <User   color={color} size={22} /> }} />
+      <Tab.Screen
+        name="Acesso"
+        component={FuncHomeScreen}
+        options={{ tabBarIcon: ({ color }) => <QrCode color={color} size={22} /> }}
+      />
+      <Tab.Screen
+        name="Avisos"
+        component={AvisosScreen}
+        listeners={{ focus: () => markAvisosRead() }}
+        options={{
+          tabBarIcon: ({ color }) => <Bell color={color} size={22} />,
+          tabBarBadge: avisosNaoLido ? '' : undefined,
+        }}
+      />
+      <Tab.Screen
+        name="Perfil"
+        component={PerfilScreen}
+        options={{ tabBarIcon: ({ color }) => <User color={color} size={22} /> }}
+      />
     </Tab.Navigator>
   );
 }
@@ -65,8 +119,8 @@ function FuncTabs() {
 function VisitanteTabs() {
   return (
     <Tab.Navigator screenOptions={TAB_OPTS}>
-      <Tab.Screen name="Acesso" component={VisitanteHomeScreen} options={{ tabBarLabel: 'Acesso', tabBarIcon: ({ color }) => <QrCode color={color} size={22} /> }} />
-      <Tab.Screen name="Perfil" component={PerfilScreen}        options={{ tabBarLabel: 'Perfil', tabBarIcon: ({ color }) => <User   color={color} size={22} /> }} />
+      <Tab.Screen name="Acesso" component={VisitanteHomeScreen} options={{ tabBarIcon: ({ color }) => <QrCode color={color} size={22} /> }} />
+      <Tab.Screen name="Perfil" component={PerfilScreen}        options={{ tabBarIcon: ({ color }) => <User   color={color} size={22} /> }} />
     </Tab.Navigator>
   );
 }
