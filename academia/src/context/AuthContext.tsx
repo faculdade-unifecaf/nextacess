@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DeviceEventEmitter } from 'react-native';
 import api from '../../services/api';
+import { registerForPush, unregisterPush } from '../services/push';
 
 export type Role = 'admin' | 'funcionario' | 'visitante';
 
@@ -34,7 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     AsyncStorage.multiGet(['token', 'user']).then((pairs) => {
       const userVal = pairs[1]?.[1];
-      if (userVal) setUser(JSON.parse(userVal));
+      if (userVal) {
+        setUser(JSON.parse(userVal));
+        // sessão restaurada — re-registra o dispositivo para push
+        registerForPush().catch(() => {});
+      }
       setIsLoading(false);
     });
   }, []);
@@ -48,9 +53,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await api.post('/auth/app-login', { email, cpf });
     await AsyncStorage.multiSet([['token', data.token], ['user', JSON.stringify(data.user)]]);
     setUser(data.user);
+    // registra o dispositivo para receber notificações push
+    registerForPush().catch(() => {});
   };
 
   const logout = async () => {
+    await unregisterPush();
     await AsyncStorage.multiRemove(['token', 'user']);
     setUser(null);
   };
