@@ -121,9 +121,9 @@ export default function Empresas() {
             <tbody>
               {filtered.map(e => (
                 <tr key={e.id}>
-                  <td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div className="avatar avatar-sm" style={{ background: `${e.avatarColor}20`, color: e.avatarColor, boxShadow: `0 0 8px ${e.avatarColor}30` }}>
+                      <div className="avatar avatar-sm" style={{ background: `${e.avatarColor}20`, color: e.avatarColor, boxShadow: `0 0 8px ${e.avatarColor}30`, flexShrink: 0 }}>
                         {e.nome.charAt(0)}
                       </div>
                       <div>

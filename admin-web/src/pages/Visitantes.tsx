@@ -6,9 +6,9 @@ import type { Visitante, StatusVisitante } from '../data/mockData';
 
 const statusCfg: Record<StatusVisitante, { cls: string; label: string }> = {
   Aguardando: { cls: 'badge-amber', label: 'Aguardando' },
-  Aprovado: { cls: 'badge-blue', label: 'Aprovado' },
-  'Em visita': { cls: 'badge-green', label: 'Em visita' },
-  Saiu: { cls: '', label: 'Saiu' },
+  Aprovado: { cls: 'badge-green', label: 'Aprovado' },
+  'Em visita': { cls: 'badge-blue', label: 'Em visita' },
+  Saiu: { cls: 'badge-neutral', label: 'Saiu' },
   Negado: { cls: 'badge-red', label: 'Negado' },
 };
 

@@ -6,8 +6,8 @@ import type { TipoAcesso, StatusAcesso, TipoPessoa } from '../data/mockData';
 
 const tipoPessoaCfg: Record<TipoPessoa, { cls: string }> = {
   Administrador: { cls: 'badge-blue' },
-  Funcionário: { cls: 'badge-green' },
-  Visitante: { cls: 'badge-purple' },
+  Funcionário: { cls: 'badge-neutral' },
+  Visitante: { cls: 'badge-amber' },
 };
 
 export default function Acessos() {
