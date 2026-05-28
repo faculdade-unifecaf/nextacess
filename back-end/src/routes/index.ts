@@ -8,6 +8,7 @@ import avisosRoutes       from './avisos.routes';
 import acessosRoutes      from './acessos.routes';
 import chatRoutes         from './chat.routes';
 import iotRoutes          from './iot.routes';
+import devicesRoutes      from './devices.routes';
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use('/visitantes',   auth, visitantesRoutes);
 router.use('/avisos',       auth, avisosRoutes);
 router.use('/acessos',      auth, acessosRoutes);
 router.use('/chat',         auth, chatRoutes);
+router.use('/devices',      auth, devicesRoutes);
 
 export default router;
