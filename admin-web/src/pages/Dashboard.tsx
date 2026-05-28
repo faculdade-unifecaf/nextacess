@@ -18,8 +18,8 @@ export default function Dashboard() {
 
   const stats = [
     { icon: Building2, label: 'Empresas Ativas', value: totalEmpresas, color: '#4c9eff', sub: `${empresas.length} cadastradas`, trend: 'No prédio', pos: true },
-    { icon: Users, label: 'Funcionários Ativos', value: funcAtivos, color: '#22d35e', sub: `${funcionarios.length} total`, trend: 'Credenciados', pos: true },
-    { icon: UserPlus, label: 'Visitantes Hoje', value: visitantesHoje, color: '#b06cff', sub: `${aguardando} aguardando`, trend: aguardando > 0 ? `${aguardando} pendente${aguardando > 1 ? 's' : ''}` : 'Nenhum pendente', pos: aguardando === 0 },
+    { icon: Users, label: 'Funcionários Ativos', value: funcAtivos, color: '#4c9eff', sub: `${funcionarios.length} total`, trend: 'Credenciados', pos: true },
+    { icon: UserPlus, label: 'Visitantes Hoje', value: visitantesHoje, color: '#ffaa00', sub: `${aguardando} aguardando`, trend: aguardando > 0 ? `${aguardando} pendente${aguardando > 1 ? 's' : ''}` : 'Nenhum pendente', pos: aguardando === 0 },
     { icon: ShieldCheck, label: 'Acessos Hoje', value: acessosHoje, color: '#4c9eff', sub: 'registros do dia', trend: 'Portaria ativa', pos: true },
     { icon: Bell, label: 'Avisos Ativos', value: avisosAtivos, color: '#ffaa00', sub: 'comunicados vigentes', trend: 'Publicados', pos: true },
     { icon: ShieldAlert, label: 'Acessos Negados', value: negadosHoje, color: '#ff3a3a', sub: 'hoje na portaria', trend: negadosHoje > 0 ? 'Requer atenção' : 'Tudo normal', pos: negadosHoje === 0 },
@@ -138,7 +138,7 @@ export default function Dashboard() {
                 <tr key={a.id}>
                   <td style={{ fontWeight: 700, fontSize: 13 }}>{a.pessoa_nome}</td>
                   <td>
-                    <span className={`badge ${a.pessoa_tipo === 'Administrador' ? 'badge-blue' : a.pessoa_tipo === 'Visitante' ? 'badge-purple' : 'badge-green'}`}>
+                    <span className={`badge ${a.pessoa_tipo === 'Administrador' ? 'badge-blue' : a.pessoa_tipo === 'Visitante' ? 'badge-amber' : 'badge-neutral'}`}>
                       {a.pessoa_tipo}
                     </span>
                   </td>
