@@ -4,10 +4,15 @@ import { useAdmin } from '../context/AdminContext';
 import { ShieldCheck, ShieldAlert, TrendingUp, Search } from 'lucide-react';
 import type { TipoAcesso, StatusAcesso, TipoPessoa } from '../data/mockData';
 
-const tipoPessoaCfg: Record<TipoPessoa, { cls: string }> = {
-  Administrador: { cls: 'badge-blue' },
-  Funcionário: { cls: 'badge-green' },
-  Visitante: { cls: 'badge-purple' },
+// O back-end grava o role direto ('admin', 'funcionario', 'visitante')
+// e às vezes o valor capitalizado — cobrimos os dois formatos
+const tipoPessoaCfg: Record<string, { cls: string; label: string }> = {
+  admin:          { cls: 'badge-blue',    label: 'Administrador' },
+  funcionario:    { cls: 'badge-neutral', label: 'Funcionário'   },
+  visitante:      { cls: 'badge-amber',   label: 'Visitante'     },
+  Administrador:  { cls: 'badge-blue',    label: 'Administrador' },
+  'Funcionário':  { cls: 'badge-neutral', label: 'Funcionário'   },
+  Visitante:      { cls: 'badge-amber',   label: 'Visitante'     },
 };
 
 export default function Acessos() {
@@ -128,7 +133,7 @@ export default function Acessos() {
                         <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 2 }}>{a.observacao}</div>
                       )}
                     </td>
-                    <td><span className={`badge ${tipoCfg.cls}`}>{a.pessoa_tipo}</span></td>
+                    <td><span className={`badge ${tipoCfg?.cls ?? 'badge-neutral'}`}>{tipoCfg?.label ?? a.pessoa_tipo}</span></td>
                     <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                       {a.empresa ?? '—'}{a.andar ? ` · ${a.andar}º andar` : ''}
                     </td>
