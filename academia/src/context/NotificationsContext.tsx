@@ -28,23 +28,43 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const [chatNaoLido,          setChatNaoLido]          = useState(false);
   const [avisosNaoLido,        setAvisosNaoLido]        = useState(false);
 
-  // Refs para timestamps de última leitura (evita re-render desnecessário)
   const chatLastReadRef   = useRef<string | null>(null);
   const avisosLastReadRef = useRef<string | null>(null);
+  const chatInitRef       = useRef(false);
+  const avisosInitRef     = useRef(false);
 
-  // Carrega timestamps persistidos ao logar
+  // Carrega (ou inicializa) timestamps persistidos ao logar
   useEffect(() => {
     if (!user) {
       setVisitantesAguardando(0);
       setChatNaoLido(false);
       setAvisosNaoLido(false);
+      chatInitRef.current   = false;
+      avisosInitRef.current = false;
       return;
     }
     const chatKey   = `@nextaccess:chat_last_read_${user.empresa_id ?? user.id}`;
     const avisosKey = `@nextaccess:avisos_last_read_${user.id}`;
-    AsyncStorage.multiGet([chatKey, avisosKey]).then(pairs => {
-      chatLastReadRef.current   = pairs[0][1];
-      avisosLastReadRef.current = pairs[1][1];
+    const now       = new Date().toISOString();
+
+    AsyncStorage.multiGet([chatKey, avisosKey]).then(async pairs => {
+      // Se nunca visitou, salva agora como ponto de partida — badge só para mensagens futuras
+      if (pairs[0][1] === null) {
+        await AsyncStorage.setItem(chatKey, now);
+        chatLastReadRef.current = now;
+      } else {
+        chatLastReadRef.current = pairs[0][1];
+      }
+
+      if (pairs[1][1] === null) {
+        await AsyncStorage.setItem(avisosKey, now);
+        avisosLastReadRef.current = now;
+      } else {
+        avisosLastReadRef.current = pairs[1][1];
+      }
+
+      chatInitRef.current   = true;
+      avisosInitRef.current = true;
     });
   }, [user?.id]);
 
@@ -67,40 +87,39 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     if (!user || user.role !== 'admin' || !user.empresa_id) return;
     const poll = async () => {
+      if (!chatInitRef.current) return; // aguarda inicialização dos timestamps
       try {
         const { data } = await api.get(`/chat/${user.empresa_id}`);
         const msgs = (data as any[]).filter(m => m.from_role === 'recepcionista');
         if (!msgs.length) return;
-        const latest = msgs[msgs.length - 1].created_at as string;
-        const lastRead = chatLastReadRef.current;
-        if (!lastRead || new Date(latest) > new Date(lastRead)) {
+        const latest   = msgs[msgs.length - 1].created_at as string;
+        const lastRead = chatLastReadRef.current!;
+        if (new Date(latest) > new Date(lastRead)) {
           setChatNaoLido(true);
         }
       } catch {}
     };
-    poll();
-    const id = setInterval(poll, 6000);
-    return () => clearInterval(id);
+    // Pequeno delay para garantir que a inicialização ocorreu
+    const init = setTimeout(poll, 1500);
+    const id   = setInterval(poll, 6000);
+    return () => { clearTimeout(init); clearInterval(id); };
   }, [user?.id, user?.empresa_id]);
 
   // --- Polling: avisos não lidos (admin + funcionário) ---
   useEffect(() => {
     if (!user || user.role === 'visitante') return;
     const poll = async () => {
+      if (!avisosInitRef.current) return; // aguarda inicialização dos timestamps
       try {
         const { data } = await api.get('/avisos');
-        const lastRead = avisosLastReadRef.current;
-        if (!lastRead) {
-          if ((data as any[]).length > 0) setAvisosNaoLido(true);
-          return;
-        }
+        const lastRead = avisosLastReadRef.current!;
         const hasNew = (data as any[]).some(a => new Date(a.created_at) > new Date(lastRead));
         if (hasNew) setAvisosNaoLido(true);
       } catch {}
     };
-    poll();
-    const id = setInterval(poll, 15000);
-    return () => clearInterval(id);
+    const init = setTimeout(poll, 1500);
+    const id   = setInterval(poll, 15000);
+    return () => { clearTimeout(init); clearInterval(id); };
   }, [user?.id]);
 
   const markChatRead = useCallback(async () => {
