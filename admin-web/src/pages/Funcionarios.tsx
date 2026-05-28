@@ -170,7 +170,7 @@ export default function Funcionarios() {
                     </td>
                     <td style={{ fontSize: 13 }}>{f.cargo}</td>
                     <td>
-                      <span className={`badge ${f.role === 'admin' ? 'badge-blue' : 'badge-purple'}`}>
+                      <span className={`badge ${f.role === 'admin' ? 'badge-blue' : 'badge-neutral'}`}>
                         {f.role === 'admin' ? <><ShieldCheck size={10} /> Admin</> : 'Funcionário'}
                       </span>
                     </td>
