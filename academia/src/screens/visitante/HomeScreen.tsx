@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
-import { Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Clock, CheckCircle, XCircle, RefreshCw, QrCode } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useAccessResult } from '../../hooks/useAccessResult';
 import AccessOverlay from '../../components/AccessOverlay';
@@ -38,7 +39,16 @@ export default function VisitanteHomeScreen() {
   const status  = user.visitanteStatus ?? 'Aguardando';
   const { token, seconds } = useRotatingToken(user.id);
   const progress = seconds / 30;
-  const timerColor = seconds > 10 ? C.blue : C.danger;
+  const timerColor = seconds > 10 ? C.blue : seconds > 5 ? C.warning : C.danger;
+
+  const animWidth = useRef(new Animated.Value(progress)).current;
+  useEffect(() => {
+    Animated.timing(animWidth, {
+      toValue: progress,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+  }, [progress]);
 
   const doRefresh = async () => {
     setRefreshing(true);
@@ -77,15 +87,33 @@ export default function VisitanteHomeScreen() {
 
         {(status === 'Aprovado' || status === 'Em visita') && (
           <View style={s.qrCard}>
-            <Text style={s.qrLabel}>QR Code de Acesso</Text>
-            <View style={s.qrWrap}>
-              {token ? <QRCode value={token} size={240} color="#000000" backgroundColor="#ffffff" /> : <ActivityIndicator color={C.blue} />}
-            </View>
-            <View style={s.timerRow}>
-              <View style={s.timerBar}>
-                <View style={[s.timerFill, { width: `${progress * 100}%`, backgroundColor: timerColor }]} />
+            <LinearGradient
+              colors={['rgba(76,158,255,0.14)', 'rgba(76,158,255,0.0)']}
+              style={s.cardGlow}
+            />
+            <View style={s.qrLabelRow}>
+              <View style={s.qrLabelIcon}>
+                <QrCode color={C.blue} size={14} />
               </View>
-              <Text style={[s.timerText, { color: timerColor }]}>Renova em {seconds}s</Text>
+              <Text style={s.qrLabel}>QR Code de Acesso</Text>
+            </View>
+            <View style={s.qrWrap}>
+              {token ? <QRCode value={token} size={220} color="#000000" backgroundColor="#ffffff" /> : <ActivityIndicator color={C.blue} />}
+            </View>
+            <View style={s.timerSection}>
+              <View style={s.timerHeader}>
+                <Text style={s.timerLabel}>Renova em</Text>
+                <Text style={[s.timerCount, { color: timerColor }]}>{seconds}s</Text>
+              </View>
+              <View style={s.timerTrack}>
+                <Animated.View style={[
+                  s.timerFill,
+                  {
+                    width: animWidth.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+                    backgroundColor: timerColor,
+                  },
+                ]} />
+              </View>
             </View>
           </View>
         )}
@@ -110,13 +138,18 @@ const s = StyleSheet.create({
   iconWrap:    { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   statusLabel: { fontSize: 18, fontWeight: '800' },
   statusDesc:  { color: C.muted, fontSize: 13, textAlign: 'center', lineHeight: 20 },
-  qrCard:      { backgroundColor: C.surface, borderRadius: 20, padding: 24, borderWidth: 1, borderColor: C.border, alignItems: 'center', gap: 16 },
-  qrLabel:     { color: C.muted, fontSize: 13, fontWeight: '600' },
-  qrWrap:      { padding: 16, backgroundColor: C.surface, borderRadius: 12 },
-  timerRow:    { width: '100%', gap: 6, alignItems: 'center' },
-  timerBar:    { height: 4, width: '100%', backgroundColor: C.border, borderRadius: 4, overflow: 'hidden' },
-  timerFill:   { height: '100%', borderRadius: 4 },
-  timerText:   { fontSize: 12, fontWeight: '600' },
+  qrCard:      { backgroundColor: C.surface, borderRadius: 24, padding: 24, borderWidth: 1, borderColor: C.border, alignItems: 'center', gap: 20, overflow: 'hidden' },
+  cardGlow:    { position: 'absolute', top: 0, left: 0, right: 0, height: 100 },
+  qrLabelRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  qrLabelIcon: { width: 26, height: 26, borderRadius: 8, backgroundColor: C.blueD, alignItems: 'center', justifyContent: 'center' },
+  qrLabel:     { color: C.text, fontSize: 15, fontWeight: '700' },
+  qrWrap:      { padding: 14, backgroundColor: '#ffffff', borderRadius: 16 },
+  timerSection:{ width: '100%', gap: 8 },
+  timerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  timerLabel:  { color: C.muted, fontSize: 12, fontWeight: '600' },
+  timerCount:  { fontSize: 14, fontWeight: '800' },
+  timerTrack:  { height: 8, backgroundColor: C.border, borderRadius: 8, overflow: 'hidden', width: '100%' },
+  timerFill:   { height: '100%', borderRadius: 8 },
   refreshBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.blueD, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: 'rgba(76,158,255,0.2)' },
   refreshText: { color: C.blue, fontWeight: '700', fontSize: 14 },
 });

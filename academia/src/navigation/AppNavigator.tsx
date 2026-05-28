@@ -22,7 +22,19 @@ const Tab   = createBottomTabNavigator();
 
 const TAB_OPTS = {
   headerShown: false,
-  tabBarStyle: { backgroundColor: C.surface, borderTopColor: C.border, borderTopWidth: 1, height: 64, paddingBottom: 10, paddingTop: 6 },
+  tabBarStyle: {
+    backgroundColor: C.surface,
+    borderTopColor: C.border,
+    borderTopWidth: 1,
+    height: 68,
+    paddingBottom: 12,
+    paddingTop: 8,
+    elevation: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+  },
   tabBarActiveTintColor:   C.blue,
   tabBarInactiveTintColor: C.muted,
   tabBarLabelStyle: { fontSize: 10, fontWeight: '600' as const },
