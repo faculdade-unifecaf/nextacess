@@ -187,6 +187,11 @@ export const criarPreferenciaPagamento = async (sessao_id: string, user_email: s
     notification_url: `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/estacionamento/webhook`,
     metadata: { sessao_id },
     auto_return: 'approved',
+    payment_methods: {
+      installments:         1,
+      default_installments: 1,
+    },
+    binary_mode: true,
   };
 
   const res = await fetch('https://api.mercadopago.com/checkout/preferences', {
