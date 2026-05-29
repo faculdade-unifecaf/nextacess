@@ -39,6 +39,8 @@ install:
 	@$(PIP) install "opencv-python>=4.8.0" "pyzbar>=0.1.9" "requests>=2.31.0" "pillow>=12.2.0" -q
 	@echo "  Instalando face_recognition (pode demorar alguns minutos)..."
 	@$(PIP) install "face_recognition>=1.3.0"
+	@echo "  Instalando modelos faciais..."
+	@$(PIP) install "git+https://github.com/ageitgey/face_recognition_models"
 	@echo ""
 	@echo "  Dependencias instaladas com sucesso."
 	@echo "  Para testar: make facial"
