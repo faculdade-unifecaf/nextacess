@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DeviceEventEmitter } from 'react-native';
-import api from '../../services/api';
+import api, { setAuthToken, clearAuthToken } from '../../services/api';
 import { registerForPush, unregisterPush } from '../services/push';
 
 export type Role = 'admin' | 'funcionario' | 'visitante';
@@ -34,10 +34,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     AsyncStorage.multiGet(['token', 'user']).then((pairs) => {
-      const userVal = pairs[1]?.[1];
+      const tokenVal = pairs[0]?.[1];
+      const userVal  = pairs[1]?.[1];
+      if (tokenVal) setAuthToken(tokenVal);
       if (userVal) {
         setUser(JSON.parse(userVal));
-        // sessão restaurada — re-registra o dispositivo para push
         registerForPush().catch(() => {});
       }
       setIsLoading(false);
@@ -51,13 +52,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, cpf: string) => {
     const { data } = await api.post('/auth/app-login', { email, cpf });
+    setAuthToken(data.token);
     await AsyncStorage.multiSet([['token', data.token], ['user', JSON.stringify(data.user)]]);
     setUser(data.user);
-    // registra o dispositivo para receber notificações push
     registerForPush().catch(() => {});
   };
 
   const logout = async () => {
+    clearAuthToken();
     await unregisterPush();
     await AsyncStorage.multiRemove(['token', 'user']);
     setUser(null);

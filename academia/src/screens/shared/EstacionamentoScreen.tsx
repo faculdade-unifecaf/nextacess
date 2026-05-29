@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator, TextInput, Modal,
+  Alert, ActivityIndicator, TextInput, Modal, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -327,7 +327,10 @@ export default function EstacionamentoScreen() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader title="Estacionamento" />
-      <ScrollView contentContainerStyle={s.scroll}>
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={carregar} tintColor={C.blue} />}
+      >
 
         {/* Sessão ativa */}
         {sessao ? (
