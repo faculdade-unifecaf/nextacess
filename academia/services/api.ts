@@ -5,6 +5,7 @@ import { DeviceEventEmitter } from 'react-native';
 const api = axios.create({
   baseURL: `${process.env.EXPO_PUBLIC_API_URL}/api`,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 10000, // 10s — evita loading infinito se o back-end não responder
 });
 
 api.interceptors.request.use(async (config) => {

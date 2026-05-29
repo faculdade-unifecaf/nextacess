@@ -5,7 +5,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import {
   Car, Bike, ParkingCircle, Clock, CreditCard,
@@ -15,6 +16,8 @@ import ScreenHeader from '../../components/ScreenHeader';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../../services/api';
 import { C } from '../../../constants/theme';
+
+const ONBOARDING_KEY = '@nextaccess:parking_onboarded';
 
 type Veiculo  = { id: string; placa: string; modelo: string; tipo: string; cor: string };
 type Sessao   = { id: string; entrada: string; custo_atual: number; status: string; placa?: string; tolerancia_restante_segundos?: number };
@@ -118,7 +121,7 @@ function CadastroFacial({ onDone }: { onDone: () => void }) {
 export default function EstacionamentoScreen() {
   const { user } = useAuth();
   const [loading,        setLoading]        = useState(true);
-  const [onboarded,      setOnboarded]      = useState(false);
+  const [onboarded,      setOnboarded]      = useState<boolean | null>(null); // null = ainda verificando AsyncStorage
   const [facialOk,       setFacialOk]       = useState(false);
   const [veiculos,       setVeiculos]       = useState<Veiculo[]>([]);
   const [sessao,         setSessao]         = useState<Sessao | null>(null);
@@ -135,7 +138,18 @@ export default function EstacionamentoScreen() {
 
   const isMensalista = ['admin', 'funcionario'].includes(user?.role ?? '');
 
+  // Verifica AsyncStorage uma vez ao montar
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY).then(val => setOnboarded(val === 'true'));
+  }, []);
+
+  const finalizarOnboarding = useCallback(async () => {
+    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+    setOnboarded(true);
+  }, []);
+
   const carregar = useCallback(async () => {
+    setLoading(true);
     try {
       const [fRes, vRes, sRes] = await Promise.all([
         api.get('/facial/status'),
@@ -149,9 +163,12 @@ export default function EstacionamentoScreen() {
         const pRes = await api.get('/estacionamento/plano');
         setPlano(pRes.data);
       }
-    } catch {}
-    finally { setLoading(false); }
-  }, []);
+    } catch {
+      // timeout ou back-end fora — não trava a tela
+    } finally {
+      setLoading(false);
+    }
+  }, [isMensalista]);
 
   useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
 
@@ -239,7 +256,10 @@ export default function EstacionamentoScreen() {
     }
   };
 
-  if (!onboarded) return <Onboarding onDone={() => setOnboarded(true)} />;
+  // Aguarda verificação do AsyncStorage
+  if (onboarded === null) return <View style={s.center}><ActivityIndicator color={C.blue} size="large" /></View>;
+
+  if (!onboarded) return <Onboarding onDone={finalizarOnboarding} />;
   if (mostraCadFacial) return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader title="Cadastro Facial" />
