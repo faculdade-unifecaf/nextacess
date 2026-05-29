@@ -33,7 +33,6 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const chatInitRef       = useRef(false);
   const avisosInitRef     = useRef(false);
 
-  // Carrega (ou inicializa) timestamps persistidos ao logar
   useEffect(() => {
     if (!user) {
       setVisitantesAguardando(0);
@@ -48,27 +47,24 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     const now       = new Date().toISOString();
 
     AsyncStorage.multiGet([chatKey, avisosKey]).then(async pairs => {
-      // Se nunca visitou, salva agora como ponto de partida — badge só para mensagens futuras
       if (pairs[0][1] === null) {
         await AsyncStorage.setItem(chatKey, now);
         chatLastReadRef.current = now;
       } else {
         chatLastReadRef.current = pairs[0][1];
       }
-
       if (pairs[1][1] === null) {
         await AsyncStorage.setItem(avisosKey, now);
         avisosLastReadRef.current = now;
       } else {
         avisosLastReadRef.current = pairs[1][1];
       }
-
       chatInitRef.current   = true;
       avisosInitRef.current = true;
     });
   }, [user?.id]);
 
-  // --- Polling: visitantes aguardando (admin) ---
+  // Polling: visitantes aguardando (admin)
   useEffect(() => {
     if (!user || user.role !== 'admin') return;
     const poll = async () => {
@@ -83,33 +79,30 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     return () => clearInterval(id);
   }, [user?.id]);
 
-  // --- Polling: chat não lido (admin com empresa) ---
+  // Polling: chat não lido (admin com empresa)
   useEffect(() => {
     if (!user || user.role !== 'admin' || !user.empresa_id) return;
     const poll = async () => {
-      if (!chatInitRef.current) return; // aguarda inicialização dos timestamps
+      if (!chatInitRef.current) return;
       try {
         const { data } = await api.get(`/chat/${user.empresa_id}`);
         const msgs = (data as any[]).filter(m => m.from_role === 'recepcionista');
         if (!msgs.length) return;
         const latest   = msgs[msgs.length - 1].created_at as string;
         const lastRead = chatLastReadRef.current!;
-        if (new Date(latest) > new Date(lastRead)) {
-          setChatNaoLido(true);
-        }
+        if (new Date(latest) > new Date(lastRead)) setChatNaoLido(true);
       } catch {}
     };
-    // Pequeno delay para garantir que a inicialização ocorreu
     const init = setTimeout(poll, 1500);
     const id   = setInterval(poll, 6000);
     return () => { clearTimeout(init); clearInterval(id); };
   }, [user?.id, user?.empresa_id]);
 
-  // --- Polling: avisos não lidos (admin + funcionário) ---
+  // Polling: avisos não lidos (admin + funcionário)
   useEffect(() => {
     if (!user || user.role === 'visitante') return;
     const poll = async () => {
-      if (!avisosInitRef.current) return; // aguarda inicialização dos timestamps
+      if (!avisosInitRef.current) return;
       try {
         const { data } = await api.get('/avisos');
         const lastRead = avisosLastReadRef.current!;
