@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Building2, Users, UserPlus, Bell, ShieldCheck, LogOut, Lock } from 'lucide-react';
+import { LayoutDashboard, Building2, Users, UserPlus, Bell, ShieldCheck, LogOut, Lock, ParkingCircle } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import { authService } from '../services/authService';
 
@@ -10,7 +10,8 @@ const navItems = [
   { to: '/funcionarios', icon: Users, label: 'Funcionários' },
   { to: '/visitantes', icon: UserPlus, label: 'Visitantes' },
   { to: '/avisos', icon: Bell, label: 'Avisos' },
-  { to: '/acessos', icon: ShieldCheck, label: 'Acessos' },
+  { to: '/acessos',        icon: ShieldCheck,   label: 'Acessos' },
+  { to: '/estacionamento', icon: ParkingCircle, label: 'Estacionamento' },
 ];
 
 export default function Sidebar() {
