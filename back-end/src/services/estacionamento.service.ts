@@ -175,7 +175,8 @@ export const criarPreferenciaPagamento = async (sessao_id: string, user_email: s
       currency_id: 'BRL',
     }],
     payer: {
-      email: user_email,
+      // Em sandbox o email real conflita com conta MP existente — usa email de teste
+      email: token.startsWith('TEST-') ? 'test_user@testuser.com' : user_email,
       ...(user_cpf ? { identification: { type: 'CPF', number: user_cpf.replace(/\D/g, '') } } : {}),
     },
     back_urls: {
@@ -250,9 +251,9 @@ export const getSessoes = async (user_id?: string) => {
       s.*,
       v.placa,
       v.modelo,
-      COALESCE(f.nome_completo, vis.nome_completo)          AS nome_usuario,
-      COALESCE(f.email,         vis.email)                  AS email_usuario,
-      CASE WHEN f.id IS NOT NULL THEN f.role ELSE 'visitante' END AS role_usuario
+      COALESCE(f.nome_completo, vis.nome_completo)                    AS nome_usuario,
+      COALESCE(f.email,         vis.email)                          AS email_usuario,
+      CASE WHEN f.id IS NOT NULL THEN f.role::TEXT ELSE 'visitante' END AS role_usuario
     FROM estacionamento_sessoes s
     LEFT JOIN estacionamento_veiculos v   ON v.id   = s.veiculo_id
     LEFT JOIN funcionarios            f   ON f.id::TEXT  = s.user_id
