@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
     "@types/dotenv": "^6.1.1",
     "@types/jsonwebtoken": "^9.0.10",
     "cors": "^2.8.6",

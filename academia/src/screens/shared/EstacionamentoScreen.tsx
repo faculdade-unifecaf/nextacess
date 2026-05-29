@@ -64,12 +64,31 @@ function Onboarding({ onDone }: { onDone: () => void }) {
   );
 }
 
-/* ─── Cadastro Facial ─── */
+/* ─── Cadastro Facial (2 fotos) ─── */
+const FOTO_STEPS = [
+  {
+    key:    'normal'  as const,
+    titulo: 'Foto 1 de 2 — Distância normal',
+    desc:   'Segure o celular como uma selfie comum. Rosto centralizado e iluminado.',
+    dica:   'Braço esticado, olhe direto para a câmera',
+  },
+  {
+    key:    'proxima' as const,
+    titulo: 'Foto 2 de 2 — Aproxime-se',
+    desc:   'Chegue mais perto da câmera. Seu rosto deve ocupar a maior parte da tela.',
+    dica:   'Rosto bem próximo, sem cortar o queixo nem a testa',
+  },
+];
+
 function CadastroFacial({ onDone }: { onDone: () => void }) {
   const [perm, requestPerm] = useCameraPermissions();
+  const [stepIdx,    setStepIdx]    = useState(0);
+  const [fotoNormal, setFotoNormal] = useState<string | null>(null);
   const [capturando, setCapturando] = useState(false);
   const [enviando,   setEnviando]   = useState(false);
   const camRef = useRef<any>(null);
+
+  const step = FOTO_STEPS[stepIdx];
 
   if (!perm?.granted) {
     return (
@@ -84,16 +103,31 @@ function CadastroFacial({ onDone }: { onDone: () => void }) {
   }
 
   const tirarFoto = async () => {
-    if (!camRef.current || capturando) return;
+    if (!camRef.current || capturando || enviando) return;
     setCapturando(true);
     try {
-      const foto = await camRef.current.takePictureAsync({ base64: true, quality: 0.6 });
+      const foto = await camRef.current.takePictureAsync({ base64: true, quality: 0.75 });
+
+      if (stepIdx === 0) {
+        // Primeira foto — avança para a segunda
+        setFotoNormal(foto.base64);
+        setStepIdx(1);
+        setCapturando(false);
+        return;
+      }
+
+      // Segunda foto — envia as duas para o back-end
       setEnviando(true);
-      await api.post('/facial/cadastrar', { foto_base64: foto.base64 });
-      Alert.alert('Pronto!', 'Rosto cadastrado com sucesso!');
+      await api.post('/facial/cadastrar', {
+        foto_normal_base64:  fotoNormal,
+        foto_proxima_base64: foto.base64,
+      });
+      Alert.alert('Pronto!', 'Rosto cadastrado com sucesso!\nA câmera do estacionamento já pode te reconhecer.');
       onDone();
     } catch (e: any) {
-      Alert.alert('Erro', e?.response?.data?.error ?? 'Falha ao cadastrar rosto');
+      Alert.alert('Erro', e?.response?.data?.error ?? 'Falha ao cadastrar rosto. Tente novamente.');
+      setStepIdx(0);
+      setFotoNormal(null);
     } finally {
       setCapturando(false);
       setEnviando(false);
@@ -102,17 +136,39 @@ function CadastroFacial({ onDone }: { onDone: () => void }) {
 
   return (
     <View style={cf.root}>
-      <Text style={cf.title}>Cadastro Facial</Text>
-      <Text style={cf.sub}>Posicione seu rosto no centro e tire uma foto</Text>
+      {/* Indicador de progresso */}
+      <View style={cf.progress}>
+        {FOTO_STEPS.map((_, i) => (
+          <View key={i} style={[cf.progressDot, i <= stepIdx && cf.progressDotActive]} />
+        ))}
+      </View>
+
+      <Text style={cf.title}>{step.titulo}</Text>
+      <Text style={cf.sub}>{step.desc}</Text>
+
       <View style={cf.camWrap}>
         <CameraView ref={camRef} style={cf.cam} facing="front" />
-        <View style={cf.overlay} />
+        {/* Guia oval para posicionamento do rosto */}
+        <View style={[cf.faceGuide, stepIdx === 1 && cf.faceGuideClose]} />
       </View>
-      <TouchableOpacity style={[cf.btn, enviando && { opacity: 0.6 }]} onPress={tirarFoto} disabled={enviando}>
+
+      <Text style={cf.dica}>💡 {step.dica}</Text>
+
+      <TouchableOpacity
+        style={[cf.btn, (capturando || enviando) && { opacity: 0.6 }]}
+        onPress={tirarFoto}
+        disabled={capturando || enviando}
+      >
         {enviando
-          ? <ActivityIndicator color="#fff" />
-          : <Text style={cf.btnText}>{capturando ? 'Aguarde...' : 'Cadastrar Rosto'}</Text>}
+          ? <><ActivityIndicator color="#fff" /><Text style={cf.btnText}> Salvando...</Text></>
+          : <Text style={cf.btnText}>{capturando ? 'Aguarde...' : stepIdx === 0 ? 'Tirar foto 1' : 'Tirar foto 2 e salvar'}</Text>}
       </TouchableOpacity>
+
+      {stepIdx === 1 && (
+        <TouchableOpacity onPress={() => { setStepIdx(0); setFotoNormal(null); }} style={cf.voltarBtn}>
+          <Text style={cf.voltarText}>← Refazer foto 1</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -502,14 +558,21 @@ const ob = StyleSheet.create({
 });
 
 const cf = StyleSheet.create({
-  root:    { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14 },
-  title:   { color: C.text, fontSize: 20, fontWeight: '800' },
-  sub:     { color: C.muted, fontSize: 13, textAlign: 'center' },
-  camWrap: { width: 240, height: 320, borderRadius: 20, overflow: 'hidden', position: 'relative' },
-  cam:     { flex: 1 },
-  overlay: { position: 'absolute', top: 20, left: 20, right: 20, bottom: 20, borderWidth: 2, borderColor: C.blue, borderRadius: 12 },
-  btn:     { backgroundColor: C.blue, borderRadius: 14, paddingHorizontal: 32, paddingVertical: 14, alignItems: 'center', width: '100%', marginTop: 8 },
-  btnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  root:             { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12, backgroundColor: C.bg },
+  progress:         { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  progressDot:      { width: 8, height: 8, borderRadius: 4, backgroundColor: C.border },
+  progressDotActive:{ backgroundColor: C.blue, width: 24 },
+  title:            { color: C.text, fontSize: 18, fontWeight: '800', textAlign: 'center' },
+  sub:              { color: C.muted, fontSize: 13, textAlign: 'center', lineHeight: 18 },
+  camWrap:          { width: 260, height: 340, borderRadius: 20, overflow: 'hidden', position: 'relative', borderWidth: 2, borderColor: C.border },
+  cam:              { flex: 1 },
+  faceGuide:        { position: 'absolute', top: '12%', left: '15%', right: '15%', bottom: '12%', borderWidth: 2, borderColor: C.blue + 'cc', borderRadius: 130 },
+  faceGuideClose:   { top: '5%', left: '5%', right: '5%', bottom: '5%' },
+  dica:             { color: C.muted, fontSize: 11, textAlign: 'center', paddingHorizontal: 16 },
+  btn:              { backgroundColor: C.blue, borderRadius: 14, paddingHorizontal: 32, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, width: '100%', marginTop: 4 },
+  btnText:          { color: '#fff', fontWeight: '800', fontSize: 15 },
+  voltarBtn:        { paddingVertical: 8 },
+  voltarText:       { color: C.muted, fontSize: 13 },
 });
 
 const mo = StyleSheet.create({

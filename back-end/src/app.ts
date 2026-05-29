@@ -6,7 +6,7 @@ import routes from './routes';
 const app = express();
 
 app.use(cors({ origin: '*' }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // fotos base64 chegam antes do upload pro Storage
 app.use(helmet());
 
 app.use('/api', routes);

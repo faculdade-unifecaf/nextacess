@@ -34,6 +34,19 @@ FACE_TOLERANCE         = 0.50  # limiar de similaridade (menor = mais restritivo
 COOLDOWN_SECONDS       = 5    # tempo mínimo entre reconhecimentos do mesmo rosto
 
 
+# ── Utilitário: baixa foto de uma URL e retorna imagem RGB ───────────────────
+def download_foto(url: str):
+    try:
+        r = requests.get(url, timeout=10)
+        if not r.ok:
+            return None
+        arr = np.frombuffer(r.content, np.uint8)
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        return cv2.cvtColor(img, cv2.COLOR_BGR2RGB) if img is not None else None
+    except Exception:
+        return None
+
+
 # ── Carregador de cadastros ────────────────────────────────────────────────────
 class FaceDatabase:
     def __init__(self):
@@ -51,25 +64,27 @@ class FaceDatabase:
             rows = r.json()
             encs, ids = [], []
             for row in rows:
-                try:
-                    b64 = row["foto_base64"]
-                    if "," in b64:
-                        b64 = b64.split(",", 1)[1]
-                    img_bytes = base64.b64decode(b64)
-                    img_arr   = np.frombuffer(img_bytes, np.uint8)
-                    img_bgr   = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
-                    img_rgb   = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-                    found = face_recognition.face_encodings(img_rgb)
-                    if found:
-                        encs.append(found[0])
-                        ids.append(row["user_id"])
-                except Exception as e:
-                    print(f"[FaceDB] Erro ao processar foto de {row.get('user_id')}: {e}")
+                uid = row.get("user_id")
+                # Processa as duas fotos (normal + proxima) — mais encodings = mais precisão
+                for key in ["foto_url_normal", "foto_url_proxima"]:
+                    url = row.get(key)
+                    if not url:
+                        continue
+                    try:
+                        img_rgb = download_foto(url)
+                        if img_rgb is None:
+                            continue
+                        found = face_recognition.face_encodings(img_rgb)
+                        if found:
+                            encs.append(found[0])
+                            ids.append(uid)
+                    except Exception as e:
+                        print(f"[FaceDB] Erro ao processar {key} de {uid}: {e}")
 
             with self.lock:
                 self.encodings = encs
                 self.user_ids  = ids
-            print(f"[FaceDB] {len(encs)} cadastros carregados.")
+            print(f"[FaceDB] {len(encs)} encodings carregados ({len(rows)} usuários).")
         except Exception as e:
             print(f"[FaceDB] Falha na atualização: {e}")
         finally:

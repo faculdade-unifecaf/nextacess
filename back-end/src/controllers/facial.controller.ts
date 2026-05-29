@@ -5,9 +5,16 @@ import sql            from '../config/database';
 
 export const cadastrar = async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const { foto_base64 } = req.body;
-  if (!foto_base64) { res.status(400).json({ error: 'foto_base64 obrigatória' }); return; }
-  res.status(201).json(await facialSvc.cadastrarFacial(user.id, foto_base64));
+  const { foto_normal_base64, foto_proxima_base64 } = req.body;
+  if (!foto_normal_base64) {
+    res.status(400).json({ error: 'foto_normal_base64 obrigatória' }); return;
+  }
+  try {
+    const result = await facialSvc.cadastrarFacial(user.id, foto_normal_base64, foto_proxima_base64);
+    res.status(201).json(result);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message ?? 'Falha ao cadastrar facial' });
+  }
 };
 
 export const status = async (req: Request, res: Response) => {
