@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as svc from '../services/estacionamento.service';
+import sql      from '../config/database';
 
 export const getTarifas = async (_req: Request, res: Response) => {
   res.json(await svc.getTarifas());
@@ -68,7 +69,15 @@ export const iniciarSessao = async (req: Request, res: Response) => {
 export const pagarSessao = async (req: Request, res: Response) => {
   const user = (req as any).user;
   try {
-    const result = await svc.criarPreferenciaPagamento(req.params.id, user.email);
+    // Busca CPF para pré-preencher o checkout do MP (obrigatório no Brasil)
+    const rows = await sql`
+      SELECT cpf FROM funcionarios WHERE id = ${user.id}
+      UNION ALL
+      SELECT cpf FROM visitantes    WHERE id = ${user.id}
+      LIMIT 1
+    `;
+    const cpf = (rows[0] as any)?.cpf ?? null;
+    const result = await svc.criarPreferenciaPagamento(req.params.id, user.email, cpf);
     res.json(result);
   } catch (e: any) {
     res.status(500).json({ error: e.message });

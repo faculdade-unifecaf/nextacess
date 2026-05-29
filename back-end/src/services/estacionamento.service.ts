@@ -160,7 +160,7 @@ export const calcularCusto = async (sessao_id: string) => {
   return { sessao_id, minutos, horas, valor, tarifas };
 };
 
-export const criarPreferenciaPagamento = async (sessao_id: string, user_email: string) => {
+export const criarPreferenciaPagamento = async (sessao_id: string, user_email: string, user_cpf?: string | null) => {
   const custo = await calcularCusto(sessao_id);
   if (!custo) throw new Error('Sessão não encontrada');
 
@@ -174,7 +174,10 @@ export const criarPreferenciaPagamento = async (sessao_id: string, user_email: s
       unit_price: custo.valor,
       currency_id: 'BRL',
     }],
-    payer: { email: user_email },
+    payer: {
+      email: user_email,
+      ...(user_cpf ? { identification: { type: 'CPF', number: user_cpf.replace(/\D/g, '') } } : {}),
+    },
     back_urls: {
       success: `${process.env.APP_URL ?? 'https://nextaccess.app'}/pagamento/sucesso`,
       failure: `${process.env.APP_URL ?? 'https://nextaccess.app'}/pagamento/erro`,
