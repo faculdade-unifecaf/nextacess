@@ -49,21 +49,18 @@ export default function Estacionamento() {
 
   const carregar = useCallback(async () => {
     setLoading(true);
-    try {
-      const [sRes, seRes, tRes] = await Promise.all([
-        axios.get(`${API}/estacionamento/dashboard`,     h()),
-        axios.get(`${API}/estacionamento/sessoes/todas`, h()),
-        axios.get(`${API}/estacionamento/tarifas`,       h()),
-      ]);
-      setStats(sRes.data);
-      setSessoes(seRes.data);
-      setTarifa(tRes.data);
-      setForm(tRes.data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+    const [sRes, seRes, tRes] = await Promise.allSettled([
+      axios.get(`${API}/estacionamento/dashboard`,     h()),
+      axios.get(`${API}/estacionamento/sessoes/todas`, h()),
+      axios.get(`${API}/estacionamento/tarifas`,       h()),
+    ]);
+    if (sRes.status  === 'fulfilled') setStats(sRes.value.data);
+    if (seRes.status === 'fulfilled') setSessoes(seRes.value.data);
+    if (tRes.status  === 'fulfilled') { setTarifa(tRes.value.data); setForm(tRes.value.data); }
+    if (sRes.status  === 'rejected')  console.error('[dashboard]',  sRes.reason);
+    if (seRes.status === 'rejected')  console.error('[sessoes]',    seRes.reason);
+    if (tRes.status  === 'rejected')  console.error('[tarifas]',    tRes.reason);
+    setLoading(false);
   }, []);
 
   useEffect(() => { carregar(); }, [carregar]);
