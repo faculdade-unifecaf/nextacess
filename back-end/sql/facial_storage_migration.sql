@@ -15,7 +15,7 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- ── 2. Política: leitura pública (IoT baixa sem autenticação) ──
-CREATE POLICY IF NOT EXISTS "facial_public_read"
+CREATE POLICY "facial_public_read"
 ON storage.objects FOR SELECT
 TO anon, authenticated
 USING (bucket_id = 'facial-fotos');
