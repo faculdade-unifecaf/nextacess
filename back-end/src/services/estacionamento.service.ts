@@ -102,7 +102,7 @@ export const getSessaoAtiva = async (user_id: string) =>
     SELECT s.*, v.placa, v.modelo, v.tipo AS veiculo_tipo
     FROM estacionamento_sessoes s
     LEFT JOIN estacionamento_veiculos v ON v.id = s.veiculo_id
-    WHERE s.user_id = ${user_id} AND s.status = 'ativa'
+    WHERE s.user_id = ${user_id} AND s.status IN ('ativa', 'aguardando_pagamento')
     ORDER BY s.entrada DESC LIMIT 1
   `)[0] ?? null;
 
@@ -157,15 +157,17 @@ export const criarPreferenciaPagamento = async (sessao_id: string, user_email: s
   });
 
   if (!res.ok) throw new Error(`MP erro ${res.status}: ${await res.text()}`);
-  const data = await res.json() as any;
+  const pref = await res.json() as any;
+
+  if (!pref.id || !pref.init_point) throw new Error('Resposta inválida do Mercado Pago');
 
   await sql`
     UPDATE estacionamento_sessoes
-    SET status = 'aguardando_pagamento', mp_preference_id = ${data.id}, valor_cobrado = ${custo.valor}
+    SET status = 'aguardando_pagamento', mp_preference_id = ${pref.id}, valor_cobrado = ${custo.valor}
     WHERE id = ${sessao_id}
   `;
 
-  return { init_point: data.init_point, sandbox_init_point: data.sandbox_init_point, valor: custo.valor };
+  return { init_point: pref.init_point, sandbox_init_point: pref.sandbox_init_point ?? null, valor: custo.valor };
 };
 
 export const confirmarPagamento = async (mp_payment_id: string, sessao_id: string) => {

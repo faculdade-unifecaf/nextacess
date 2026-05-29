@@ -81,15 +81,16 @@ export const webhook = async (req: Request, res: Response) => {
     const payment = await mpRes.json() as any;
 
     if (payment.status === 'approved') {
+      const paymentId = String(payment.id); // usar ID da resposta verificada, não do body
       const sessao_id = payment.metadata?.sessao_id;
       if (sessao_id) {
-        await svc.confirmarPagamento(String(data.id), sessao_id);
+        await svc.confirmarPagamento(paymentId, sessao_id);
       }
       // plano mensal
       const user_id = payment.metadata?.user_id;
       const tipo    = payment.metadata?.tipo;
       if (tipo === 'mensalidade' && user_id) {
-        await svc.confirmarPlano(user_id, String(data.id));
+        await svc.confirmarPlano(user_id, paymentId);
       }
     }
   } catch (e) {
