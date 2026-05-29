@@ -15,15 +15,13 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- ── 2. Política: leitura pública (IoT baixa sem autenticação) ──
+DROP POLICY IF EXISTS "facial_public_read" ON storage.objects;
 CREATE POLICY "facial_public_read"
 ON storage.objects FOR SELECT
 TO anon, authenticated
 USING (bucket_id = 'facial-fotos');
 
--- ── 3. Adiciona colunas de URL na tabela facial_cadastros ──────
+-- ── 3. Corrige coluna legada e adiciona colunas de URL ────────
+ALTER TABLE facial_cadastros ALTER COLUMN foto_base64 DROP NOT NULL;
 ALTER TABLE facial_cadastros ADD COLUMN IF NOT EXISTS foto_url_normal  TEXT;
 ALTER TABLE facial_cadastros ADD COLUMN IF NOT EXISTS foto_url_proxima TEXT;
-
--- foto_base64 pode ficar como coluna legada (não é mais usada)
--- Remova depois que todos os usuários recadastrarem:
--- ALTER TABLE facial_cadastros DROP COLUMN IF EXISTS foto_base64;

@@ -63,13 +63,20 @@ export async function ensureSchema() {
 
   await sql`
     CREATE TABLE IF NOT EXISTS facial_cadastros (
-      id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_id      TEXT        NOT NULL UNIQUE,
-      foto_base64  TEXT        NOT NULL,
-      created_at   TIMESTAMPTZ DEFAULT NOW(),
-      updated_at   TIMESTAMPTZ DEFAULT NOW()
+      id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id          TEXT        NOT NULL UNIQUE,
+      foto_base64      TEXT,
+      foto_url_normal  TEXT,
+      foto_url_proxima TEXT,
+      created_at       TIMESTAMPTZ DEFAULT NOW(),
+      updated_at       TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+
+  // Migração segura para tabelas já existentes
+  await sql`ALTER TABLE facial_cadastros ALTER COLUMN foto_base64 DROP NOT NULL`;
+  await sql`ALTER TABLE facial_cadastros ADD COLUMN IF NOT EXISTS foto_url_normal  TEXT`;
+  await sql`ALTER TABLE facial_cadastros ADD COLUMN IF NOT EXISTS foto_url_proxima TEXT`;
 }
 
 /* ─── Tarifas ─── */
