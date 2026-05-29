@@ -17,7 +17,7 @@ import api from '../../../services/api';
 import { C } from '../../../constants/theme';
 
 type Veiculo  = { id: string; placa: string; modelo: string; tipo: string; cor: string };
-type Sessao   = { id: string; entrada: string; custo_atual: number; status: string; placa?: string };
+type Sessao   = { id: string; entrada: string; custo_atual: number; status: string; placa?: string; tolerancia_restante_segundos?: number };
 type Plano    = { status: string; vencimento: string; valor: string };
 
 /* ─── Onboarding ─── */
@@ -131,6 +131,7 @@ export default function EstacionamentoScreen() {
   const [pagando,        setPagando]        = useState(false);
   const [assinando,      setAssinando]      = useState(false);
   const [elapsed,        setElapsed]        = useState(0);
+  const [tolerancia,     setTolerancia]     = useState(0); // segundos restantes após pagamento
 
   const isMensalista = ['admin', 'funcionario'].includes(user?.role ?? '');
 
@@ -154,14 +155,24 @@ export default function EstacionamentoScreen() {
 
   useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
 
-  // Timer da sessão ativa
+  // Timer de permanência (sessão ativa/aguardando)
   useEffect(() => {
-    if (!sessao) { setElapsed(0); return; }
+    if (!sessao || sessao.status === 'paga') { setElapsed(0); return; }
     const update = () => setElapsed(Math.floor((Date.now() - new Date(sessao.entrada).getTime()) / 1000));
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
-  }, [sessao?.id]);
+  }, [sessao?.id, sessao?.status]);
+
+  // Contador regressivo de tolerância após pagamento
+  useEffect(() => {
+    if (!sessao || sessao.status !== 'paga') { setTolerancia(0); return; }
+    const inicial = sessao.tolerancia_restante_segundos ?? 0;
+    setTolerancia(inicial);
+    if (inicial <= 0) return;
+    const id = setInterval(() => setTolerancia(t => Math.max(0, t - 1)), 1000);
+    return () => clearInterval(id);
+  }, [sessao?.id, sessao?.status]);
 
   const formatDur = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -244,24 +255,58 @@ export default function EstacionamentoScreen() {
 
         {/* Sessão ativa */}
         {sessao ? (
-          <View style={s.sessionCard}>
-            <View style={s.sessionHeader}>
-              <View style={s.sessionDot} />
-              <Text style={s.sessionTitle}>Sessão em andamento</Text>
+          sessao.status === 'paga' ? (
+            /* ── Pagamento confirmado: mostrar contagem regressiva de tolerância ── */
+            <View style={[s.sessionCard, { backgroundColor: C.success + '18', borderColor: C.success + '40' }]}>
+              <View style={s.sessionHeader}>
+                <CheckCircle size={14} color={C.success} />
+                <Text style={[s.sessionTitle, { color: C.success }]}>Pagamento confirmado!</Text>
+              </View>
+              <Text style={[s.sessionCusto, { color: C.success }]}>R$ {sessao.custo_atual?.toFixed(2) ?? '0,00'}</Text>
+              {tolerancia > 0 ? (
+                <>
+                  <Text style={[s.sessionTitle, { color: C.text, marginTop: 8 }]}>Saia em até</Text>
+                  <Text style={[s.timer, { color: C.success }]}>{formatDur(tolerancia)}</Text>
+                  <Text style={[s.emptySessionSub, { color: C.muted }]}>
+                    Aproxime-se da câmera de saída antes do tempo acabar
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={[s.sessionTitle, { color: C.danger, marginTop: 8 }]}>Tolerância expirada</Text>
+                  <Text style={s.emptySessionSub}>Dirija-se ao balcão ou pague novamente pelo app</Text>
+                </>
+              )}
+              {sessao.placa && <Text style={s.sessionPlaca}>{sessao.placa}</Text>}
             </View>
-            <Text style={s.timer}>{formatDur(elapsed)}</Text>
-            {sessao.placa && <Text style={s.sessionPlaca}>{sessao.placa}</Text>}
-            <Text style={s.sessionCusto}>R$ {sessao.custo_atual?.toFixed(2) ?? '0,00'}</Text>
-            <TouchableOpacity
-              style={[s.payBtn, pagando && { opacity: 0.6 }]}
-              onPress={pagarSessao}
-              disabled={pagando}
-            >
-              {pagando
-                ? <ActivityIndicator color="#fff" />
-                : <><CreditCard color="#fff" size={18} /><Text style={s.payBtnText}>Pagar e Sair</Text></>}
-            </TouchableOpacity>
-          </View>
+          ) : (
+            /* ── Sessão ativa / aguardando pagamento ── */
+            <View style={s.sessionCard}>
+              <View style={s.sessionHeader}>
+                <View style={s.sessionDot} />
+                <Text style={s.sessionTitle}>
+                  {sessao.status === 'aguardando_pagamento' ? 'Pagamento iniciado' : 'Sessão em andamento'}
+                </Text>
+              </View>
+              <Text style={s.timer}>{formatDur(elapsed)}</Text>
+              {sessao.placa && <Text style={s.sessionPlaca}>{sessao.placa}</Text>}
+              <Text style={s.sessionCusto}>R$ {sessao.custo_atual?.toFixed(2) ?? '0,00'}</Text>
+              <TouchableOpacity
+                style={[s.payBtn, pagando && { opacity: 0.6 }]}
+                onPress={pagarSessao}
+                disabled={pagando}
+              >
+                {pagando
+                  ? <ActivityIndicator color="#fff" />
+                  : <><CreditCard color="#fff" size={18} /><Text style={s.payBtnText}>Pagar e Sair</Text></>}
+              </TouchableOpacity>
+              {sessao.status === 'aguardando_pagamento' && (
+                <Text style={[s.emptySessionSub, { marginTop: 6 }]}>
+                  Se não conseguir pagar, dirija-se ao balcão da recepção
+                </Text>
+              )}
+            </View>
+          )
         ) : (
           <View style={s.emptySession}>
             <ParkingCircle size={36} color={C.muted} strokeWidth={1.5} />

@@ -11,7 +11,7 @@ export const cadastrar = async (req: Request, res: Response) => {
 };
 
 export const status = async (req: Request, res: Response) => {
-  const user = (req as any).user;
+  const user     = (req as any).user;
   const cadastro = await facialSvc.getFacial(user.id);
   res.json({ cadastrado: !!cadastro, criado_em: (cadastro as any)?.created_at ?? null });
 };
@@ -33,7 +33,7 @@ export const reconhecer = async (req: Request, res: Response) => {
   const { user_id } = req.body;
   if (!user_id) { res.status(400).json({ autorizado: false, motivo: 'user_id obrigatório' }); return; }
 
-  // Busca dados do usuário
+  // Busca dados do usuário (funcionário ou visitante)
   const funcs = await sql`
     SELECT id, nome_completo, role, empresa_id FROM funcionarios WHERE id = ${user_id} AND status = 'Ativo'
   `;
@@ -43,47 +43,55 @@ export const reconhecer = async (req: Request, res: Response) => {
   const pessoa = (funcs[0] ?? visits[0]) as any;
 
   if (!pessoa) {
-    res.json({ autorizado: false, motivo: 'Usuário não encontrado' }); return;
+    res.json({ autorizado: false, motivo: 'Usuário não cadastrado ou inativo' }); return;
   }
 
-  // Verifica plano mensal (funcionario/admin)
-  const plano = await estSvc.getPlano(user_id);
-  const mensalista = plano && (plano as any).status === 'ativo';
+  // Verifica plano mensal ativo (apenas funcionario/admin)
+  const plano      = await estSvc.getPlano(user_id);
+  const mensalista = !!(plano && (plano as any).status === 'ativo');
 
-  // Sessão ativa?
-  const sessaoAtiva = await estSvc.getSessaoAtiva(user_id);
+  // Busca sessão em andamento (ativa | aguardando_pagamento | paga dentro da tolerância)
+  const sessaoAtiva = await estSvc.getSessaoAtiva(user_id) as any;
 
   if (!sessaoAtiva) {
-    // ENTRADA: inicia sessão
+    // ─── ENTRADA: nenhuma sessão aberta ───
     await estSvc.iniciarSessao(user_id, null);
-    res.json({
+    return res.json({
       autorizado: true,
-      acao: 'entrada',
-      nome: pessoa.nome_completo,
+      acao:       'entrada',
+      nome:       pessoa.nome_completo,
       mensalista,
     });
-  } else {
-    const status = (sessaoAtiva as any).status;
-
-    if (status === 'paga' || mensalista) {
-      // SAÍDA autorizada
-      if (mensalista) {
-        await sql`UPDATE estacionamento_sessoes SET status = 'paga', saida = NOW() WHERE id = ${(sessaoAtiva as any).id}`;
-      }
-      res.json({
-        autorizado: true,
-        acao: 'saida',
-        nome: pessoa.nome_completo,
-        mensalista,
-      });
-    } else {
-      // Sessão ativa mas não paga — bloqueia saída
-      res.json({
-        autorizado: false,
-        acao: 'saida_bloqueada',
-        nome: pessoa.nome_completo,
-        motivo: 'Pagamento pendente — finalize pelo aplicativo',
-      });
-    }
   }
+
+  const sessaoStatus = sessaoAtiva.status;
+
+  if (sessaoStatus === 'paga' || mensalista) {
+    // ─── SAÍDA AUTORIZADA ───
+    // Mensalista: fecha sessão sem custo; Pagante: sessão já foi paga, registra saída física
+    await sql`
+      UPDATE estacionamento_sessoes
+      SET saida   = NOW(),
+          status  = 'paga',
+          pago_em = COALESCE(pago_em, NOW())
+      WHERE id = ${sessaoAtiva.id} AND saida IS NULL
+    `;
+    return res.json({
+      autorizado: true,
+      acao:       'saida',
+      nome:       pessoa.nome_completo,
+      mensalista,
+    });
+  }
+
+  // ─── SAÍDA BLOQUEADA: sessão ativa sem pagamento ───
+  const custo = await estSvc.calcularCusto(sessaoAtiva.id);
+  return res.json({
+    autorizado:    false,
+    acao:          'saida_bloqueada',
+    nome:          pessoa.nome_completo,
+    motivo:        'Pagamento pendente — finalize pelo aplicativo ou dirija-se ao balcão',
+    custo_atual:   custo?.valor ?? 0,
+    sessao_id:     sessaoAtiva.id,
+  });
 };

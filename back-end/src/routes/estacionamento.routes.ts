@@ -14,7 +14,8 @@ r.delete('/veiculos/:id', c.deleteVeiculo);
 
 r.get('/sessao/ativa',    c.getSessaoAtiva);
 r.post('/sessao/iniciar', c.iniciarSessao);
-r.post('/sessao/:id/pagar', c.pagarSessao);
+r.post('/sessao/:id/pagar',        c.pagarSessao);
+r.post('/sessao/:id/pagar-balcao', c.pagarBalcao);
 r.get('/sessoes',         c.getSessoes);
 
 r.get('/plano',           c.getPlano);
