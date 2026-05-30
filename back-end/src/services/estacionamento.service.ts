@@ -255,6 +255,13 @@ export const getSessoes = async (user_id?: string) => {
 export const getPlano = async (user_id: string) =>
   (await sql`SELECT * FROM estacionamento_planos WHERE user_id = ${user_id}`)[0] ?? null;
 
+// Verifica se o plano está realmente ativo (status + vencimento)
+export const planoAtivo = (plano: any): boolean => {
+  if (!plano || plano.status !== 'ativo') return false;
+  const hoje = new Date().toISOString().split('T')[0]!;
+  return new Date(plano.vencimento) >= new Date(hoje);
+};
+
 export const criarStripeCheckoutPlano = async (user_id: string, user_email: string) => {
   const tarifas = await getTarifas() as any;
   const stripe  = getStripe();

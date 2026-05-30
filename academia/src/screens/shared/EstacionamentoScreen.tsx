@@ -23,6 +23,11 @@ type Veiculo  = { id: string; placa: string; modelo: string; tipo: string; cor: 
 type Sessao   = { id: string; entrada: string; custo_atual: number; status: string; placa?: string; tolerancia_restante_segundos?: number };
 type Plano    = { status: string; vencimento: string; valor: string };
 
+const planoAtivo = (plano: Plano | null): boolean => {
+  if (!plano || plano.status !== 'ativo') return false;
+  return new Date(plano.vencimento) >= new Date(new Date().toISOString().split('T')[0]!);
+};
+
 /* ─── Onboarding ─── */
 const SLIDES = [
   { icon: Camera,       title: 'Reconhecimento Facial', desc: 'Cadastre seu rosto uma única vez. A cancela abre automaticamente ao chegar.' },
@@ -375,20 +380,32 @@ export default function EstacionamentoScreen() {
               </View>
               <Text style={s.timer}>{formatDur(elapsed)}</Text>
               {sessao.placa && <Text style={s.sessionPlaca}>{sessao.placa}</Text>}
-              <Text style={s.sessionCusto}>R$ {sessao.custo_atual?.toFixed(2) ?? '0,00'}</Text>
-              <TouchableOpacity
-                style={[s.payBtn, pagando && { opacity: 0.6 }]}
-                onPress={pagarSessao}
-                disabled={pagando}
-              >
-                {pagando
-                  ? <ActivityIndicator color="#fff" />
-                  : <><CreditCard color="#fff" size={18} /><Text style={s.payBtnText}>Pagar e Sair</Text></>}
-              </TouchableOpacity>
-              {sessao.status === 'aguardando_pagamento' && (
-                <Text style={[s.emptySessionSub, { marginTop: 6 }]}>
-                  Se não conseguir pagar, dirija-se ao balcão da recepção
-                </Text>
+
+              {planoAtivo(plano) ? (
+                /* Mensalista ativo: não precisa pagar, só sair pela câmera */
+                <View style={s.mensalistaTag}>
+                  <Crown size={14} color={C.warning} />
+                  <Text style={s.mensalistaTagText}>Mensalidade ativa — saia pela câmera</Text>
+                </View>
+              ) : (
+                /* Avulso ou mensalidade vencida: mostra custo e botão pagar */
+                <>
+                  <Text style={s.sessionCusto}>R$ {sessao.custo_atual?.toFixed(2) ?? '0,00'}</Text>
+                  <TouchableOpacity
+                    style={[s.payBtn, pagando && { opacity: 0.6 }]}
+                    onPress={pagarSessao}
+                    disabled={pagando}
+                  >
+                    {pagando
+                      ? <ActivityIndicator color="#fff" />
+                      : <><CreditCard color="#fff" size={18} /><Text style={s.payBtnText}>Pagar e Sair</Text></>}
+                  </TouchableOpacity>
+                  {sessao.status === 'aguardando_pagamento' && (
+                    <Text style={[s.emptySessionSub, { marginTop: 6 }]}>
+                      Se não conseguir pagar, dirija-se ao balcão da recepção
+                    </Text>
+                  )}
+                </>
               )}
             </View>
           )
@@ -402,17 +419,28 @@ export default function EstacionamentoScreen() {
 
         {/* Plano mensal (func/admin) */}
         {isMensalista && (
-          <View style={[s.card, plano?.status === 'ativo' && { borderColor: C.success + '60' }]}>
+          <View style={[s.card, planoAtivo(plano) ? { borderColor: C.success + '60' } : plano ? { borderColor: C.danger + '60' } : {}]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <Crown size={18} color={C.warning} />
+              <Crown size={18} color={planoAtivo(plano) ? C.warning : C.muted} />
               <Text style={s.cardTitle}>Mensalidade</Text>
             </View>
-            {plano?.status === 'ativo' ? (
+            {planoAtivo(plano) ? (
+              /* Plano ativo */
               <>
                 <Text style={[s.planStatus, { color: C.success }]}>● Ativo</Text>
-                <Text style={s.planVenc}>Vence em: {new Date(plano.vencimento).toLocaleDateString('pt-BR')}</Text>
+                <Text style={s.planVenc}>Vence em: {new Date(plano!.vencimento).toLocaleDateString('pt-BR')}</Text>
+              </>
+            ) : plano ? (
+              /* Plano vencido */
+              <>
+                <Text style={[s.planStatus, { color: C.danger }]}>● Vencido em {new Date(plano.vencimento).toLocaleDateString('pt-BR')}</Text>
+                <Text style={[s.planDesc, { marginTop: 4 }]}>Sua mensalidade expirou. Renove para voltar a estacionar sem custo por sessão.</Text>
+                <TouchableOpacity style={[s.planBtn, { backgroundColor: C.danger }, assinando && { opacity: 0.6 }]} onPress={assinarMensalidade} disabled={assinando}>
+                  {assinando ? <ActivityIndicator color="#fff" /> : <Text style={s.planBtnText}>Renovar Mensalidade</Text>}
+                </TouchableOpacity>
               </>
             ) : (
+              /* Sem plano */
               <>
                 <Text style={s.planDesc}>Estacione sem pagar por sessão. Acesso ilimitado no mês.</Text>
                 <TouchableOpacity style={[s.planBtn, assinando && { opacity: 0.6 }]} onPress={assinarMensalidade} disabled={assinando}>
@@ -528,8 +556,10 @@ const s = StyleSheet.create({
   timer:         { color: C.text, fontSize: 40, fontWeight: '800', fontVariant: ['tabular-nums'] as any },
   sessionPlaca:  { color: C.muted, fontSize: 13 },
   sessionCusto:  { color: C.blue, fontSize: 28, fontWeight: '800' },
-  payBtn:        { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.blue, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 14, marginTop: 4 },
-  payBtnText:    { color: '#fff', fontSize: 16, fontWeight: '800' },
+  payBtn:          { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.blue, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 14, marginTop: 4 },
+  payBtnText:      { color: '#fff', fontSize: 16, fontWeight: '800' },
+  mensalistaTag:   { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.warning + '20', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, marginTop: 4 },
+  mensalistaTagText: { color: C.warning, fontSize: 13, fontWeight: '700' },
 
   emptySession:  { backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 24, alignItems: 'center', gap: 8 },
   emptySessionText: { color: C.text, fontSize: 15, fontWeight: '700' },

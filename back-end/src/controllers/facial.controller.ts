@@ -53,9 +53,14 @@ export const reconhecer = async (req: Request, res: Response) => {
     res.json({ autorizado: false, motivo: 'Usuário não cadastrado ou inativo' }); return;
   }
 
-  // Verifica plano mensal ativo (apenas funcionario/admin)
+  // Verifica plano mensal ativo — valida status E vencimento
   const plano      = await estSvc.getPlano(user_id);
-  const mensalista = !!(plano && (plano as any).status === 'ativo');
+  const mensalista = estSvc.planoAtivo(plano);
+
+  // Auto-expira plano vencido
+  if (plano && (plano as any).status === 'ativo' && !mensalista) {
+    await sql`UPDATE estacionamento_planos SET status = 'cancelado' WHERE user_id = ${user_id}`;
+  }
 
   // Busca sessão em andamento (ativa | aguardando_pagamento | paga dentro da tolerância)
   const sessaoAtiva = await estSvc.getSessaoAtiva(user_id) as any;
