@@ -5,7 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { QrCode, UserPlus, Bell, MessageSquare, User, LogOut, Lock } from 'lucide-react-native';
+import { QrCode, UserPlus, Bell, MessageSquare, User, LogOut, Lock, ParkingCircle } from 'lucide-react-native';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +20,7 @@ import FuncHomeScreen        from '../screens/funcionario/HomeScreen';
 import VisitanteHomeScreen   from '../screens/visitante/HomeScreen';
 import AvisosScreen          from '../screens/shared/AvisosScreen';
 import PerfilScreen          from '../screens/shared/PerfilScreen';
+import EstacionamentoScreen  from '../screens/shared/EstacionamentoScreen';
 
 const Stack   = createNativeStackNavigator();
 const Tab     = createBottomTabNavigator();
@@ -28,11 +29,12 @@ const Drawer  = createDrawerNavigator();
 /* ─── Drawer: conteúdo customizado ─── */
 
 const DRAWER_ITEMS = [
-  { name: 'Acesso',     label: 'Acesso',      Icon: QrCode        },
-  { name: 'Visitantes', label: 'Visitantes',  Icon: UserPlus      },
-  { name: 'Avisos',     label: 'Avisos',      Icon: Bell          },
-  { name: 'Chat',       label: 'Chat',        Icon: MessageSquare },
-  { name: 'Perfil',     label: 'Perfil',      Icon: User          },
+  { name: 'Acesso',          label: 'Acesso',          Icon: QrCode          },
+  { name: 'Visitantes',      label: 'Visitantes',      Icon: UserPlus        },
+  { name: 'Avisos',          label: 'Avisos',          Icon: Bell            },
+  { name: 'Chat',            label: 'Chat',            Icon: MessageSquare   },
+  { name: 'Estacionamento',  label: 'Estacionamento',  Icon: ParkingCircle   },
+  { name: 'Perfil',          label: 'Perfil',          Icon: User            },
 ];
 
 function AdminDrawerContent({ navigation, state }: DrawerContentComponentProps) {
@@ -130,11 +132,12 @@ function AdminDrawer() {
       }}
       drawerContent={(props) => <AdminDrawerContent {...props} />}
     >
-      <Drawer.Screen name="Acesso"     component={AdminHomeScreen}       />
-      <Drawer.Screen name="Visitantes" component={AdminVisitantesScreen} />
-      <Drawer.Screen name="Avisos"     component={AvisosScreen}          />
-      <Drawer.Screen name="Chat"       component={AdminChatScreen}       />
-      <Drawer.Screen name="Perfil"     component={PerfilScreen}          />
+      <Drawer.Screen name="Acesso"         component={AdminHomeScreen}       />
+      <Drawer.Screen name="Visitantes"   component={AdminVisitantesScreen} />
+      <Drawer.Screen name="Avisos"       component={AvisosScreen}          />
+      <Drawer.Screen name="Chat"         component={AdminChatScreen}       />
+      <Drawer.Screen name="Estacionamento" component={EstacionamentoScreen} />
+      <Drawer.Screen name="Perfil"       component={PerfilScreen}          />
     </Drawer.Navigator>
   );
 }
@@ -152,9 +155,10 @@ const TAB_OPTS = {
 function FuncTabs() {
   return (
     <Tab.Navigator screenOptions={TAB_OPTS}>
-      <Tab.Screen name="Acesso" component={FuncHomeScreen} options={{ tabBarIcon: ({ color }) => <QrCode color={color} size={22} /> }} />
-      <Tab.Screen name="Avisos" component={AvisosScreen}   options={{ tabBarIcon: ({ color }) => <Bell   color={color} size={22} /> }} />
-      <Tab.Screen name="Perfil" component={PerfilScreen}   options={{ tabBarIcon: ({ color }) => <User   color={color} size={22} /> }} />
+      <Tab.Screen name="Acesso"         component={FuncHomeScreen}       options={{ tabBarIcon: ({ color }) => <QrCode         color={color} size={22} /> }} />
+      <Tab.Screen name="Avisos"         component={AvisosScreen}         options={{ tabBarIcon: ({ color }) => <Bell           color={color} size={22} /> }} />
+      <Tab.Screen name="Estacionamento" component={EstacionamentoScreen} options={{ tabBarIcon: ({ color }) => <ParkingCircle  color={color} size={22} />, tabBarLabel: 'Parking' }} />
+      <Tab.Screen name="Perfil"         component={PerfilScreen}         options={{ tabBarIcon: ({ color }) => <User           color={color} size={22} /> }} />
     </Tab.Navigator>
   );
 }
@@ -162,8 +166,9 @@ function FuncTabs() {
 function VisitanteTabs() {
   return (
     <Tab.Navigator screenOptions={TAB_OPTS}>
-      <Tab.Screen name="Acesso" component={VisitanteHomeScreen} options={{ tabBarIcon: ({ color }) => <QrCode color={color} size={22} /> }} />
-      <Tab.Screen name="Perfil" component={PerfilScreen}        options={{ tabBarIcon: ({ color }) => <User   color={color} size={22} /> }} />
+      <Tab.Screen name="Acesso"         component={VisitanteHomeScreen}  options={{ tabBarIcon: ({ color }) => <QrCode        color={color} size={22} /> }} />
+      <Tab.Screen name="Estacionamento" component={EstacionamentoScreen} options={{ tabBarIcon: ({ color }) => <ParkingCircle color={color} size={22} />, tabBarLabel: 'Parking' }} />
+      <Tab.Screen name="Perfil"         component={PerfilScreen}         options={{ tabBarIcon: ({ color }) => <User          color={color} size={22} /> }} />
     </Tab.Navigator>
   );
 }

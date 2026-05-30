@@ -205,7 +205,15 @@ export default function Funcionarios() {
       {modal && (
         <FuncionarioModal
           onClose={() => { setModal(false); setEditing(null); }}
-          onSave={data => { editing ? updateFuncionario(editing.id, data) : addFuncionario(data); }}
+          onSave={async data => {
+            try {
+              editing ? await updateFuncionario(editing.id, data) : await addFuncionario(data);
+              setModal(false);
+              setEditing(null);
+            } catch (e: any) {
+              alert(e?.response?.data?.error ?? 'Erro ao salvar funcionário');
+            }
+          }}
           initial={editing ?? undefined}
           empresas={empresas.filter(e => e.status === 'Ativa')}
         />

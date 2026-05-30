@@ -10,6 +10,7 @@ import Funcionarios from './pages/Funcionarios';
 import Visitantes from './pages/Visitantes';
 import Avisos from './pages/Avisos';
 import Acessos from './pages/Acessos';
+import Estacionamento from './pages/Estacionamento';
 
 function ProtectedRoute({ children, isAuth }: { children: React.ReactNode; isAuth: boolean }) {
   return isAuth ? <>{children}</> : <Navigate to="/login" replace />;
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/visitantes" element={<ProtectedRoute isAuth={isAuth}><Visitantes /></ProtectedRoute>} />
           <Route path="/avisos" element={<ProtectedRoute isAuth={isAuth}><Avisos /></ProtectedRoute>} />
           <Route path="/acessos" element={<ProtectedRoute isAuth={isAuth}><Acessos /></ProtectedRoute>} />
+          <Route path="/estacionamento" element={<ProtectedRoute isAuth={isAuth}><Estacionamento /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to={isAuth ? '/' : '/login'} replace />} />
         </Routes>
       </AdminProvider>
