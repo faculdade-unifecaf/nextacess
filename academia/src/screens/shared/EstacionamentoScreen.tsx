@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import {
   Car, Bike, ParkingCircle, Clock, CreditCard,
   Camera, CheckCircle, AlertCircle, Plus, Trash2, Crown,
@@ -276,22 +276,29 @@ export default function EstacionamentoScreen() {
     ]);
   };
 
+  const iniciarPolling = () => {
+    const check = setInterval(async () => {
+      try {
+        const { data: s } = await api.get('/estacionamento/sessao/ativa');
+        if (!s || s.status === 'paga') { clearInterval(check); carregar(); }
+      } catch { /* ignora erros de rede no polling */ }
+    }, 4000);
+    setTimeout(() => clearInterval(check), 120000);
+  };
+
   const pagarSessao = async () => {
     if (!sessao) return;
     setPagando(true);
     try {
       const { data } = await api.post(`/estacionamento/sessao/${sessao.id}/pagar`);
-      const url = data.sandbox_init_point ?? data.init_point;
-      await Linking.openURL(url);
-      // Polling para verificar pagamento
-      const check = setInterval(async () => {
-        const { data: s } = await api.get('/estacionamento/sessao/ativa');
-        if (!s || s.status === 'paga') {
-          clearInterval(check);
-          carregar();
-        }
-      }, 4000);
-      setTimeout(() => clearInterval(check), 120000);
+      // openAuthSessionAsync fecha o browser automaticamente ao detectar o deep link academia://
+      await WebBrowser.openAuthSessionAsync(data.checkout_url, 'academia://');
+      // Verifica status diretamente na Stripe ao voltar pro app
+      try {
+        const { data: verificacao } = await api.post(`/estacionamento/sessao/${sessao.id}/verificar-pagamento`);
+        if (verificacao.status === 'paga') { carregar(); return; }
+      } catch { /* ignora e deixa o polling continuar */ }
+      iniciarPolling();
     } catch (e: any) {
       Alert.alert('Erro', e?.response?.data?.error ?? 'Falha ao gerar pagamento');
     } finally {
@@ -303,8 +310,7 @@ export default function EstacionamentoScreen() {
     setAssinando(true);
     try {
       const { data } = await api.post('/estacionamento/plano/assinar');
-      const url = data.sandbox_init_point ?? data.init_point;
-      await Linking.openURL(url);
+      await WebBrowser.openAuthSessionAsync(data.checkout_url, 'academia://');
     } catch (e: any) {
       Alert.alert('Erro', e?.response?.data?.error ?? 'Falha ao gerar pagamento');
     } finally {

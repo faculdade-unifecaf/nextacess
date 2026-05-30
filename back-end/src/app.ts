@@ -2,12 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import routes from './routes';
+import { stripeWebhook } from './controllers/estacionamento.controller';
 
 const app = express();
 
 app.use(cors({ origin: '*' }));
-app.use(express.json({ limit: '10mb' })); // fotos base64 chegam antes do upload pro Storage
 app.use(helmet());
+
+// Stripe exige raw body para verificar assinatura — registrado antes do express.json()
+app.post('/api/estacionamento/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
+
+app.use(express.json({ limit: '10mb' }));
 
 app.use('/api', routes);
 
