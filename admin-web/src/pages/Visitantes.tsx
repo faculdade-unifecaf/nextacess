@@ -220,7 +220,15 @@ export default function Visitantes() {
       {modal && (
         <VisitanteModal
           onClose={() => { setModal(false); setEditing(null); }}
-          onSave={data => { editing ? updateVisitante(editing.id, data) : addVisitante(data); }}
+          onSave={async data => {
+              try {
+                editing ? await updateVisitante(editing.id, data) : await addVisitante(data);
+                setModal(false);
+                setEditing(null);
+              } catch (e: any) {
+                alert(e?.response?.data?.error ?? 'Erro ao salvar visitante');
+              }
+            }}
           initial={editing ?? undefined}
           empresas={empresas.filter(e => e.status === 'Ativa')}
           funcionarios={funcionarios.filter(f => f.status === 'Ativo')}
