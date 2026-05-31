@@ -34,3 +34,22 @@ export const remove = async (req: Request, res: Response) => {
   const r = await svc.remove(req.params['id'] as string);
   r ? res.status(204).end() : res.status(404).json({ error: 'Não encontrado' });
 };
+
+export const solicitar = async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const { empresa_id, motivo, data_visita, hora_prevista } = req.body;
+  if (!empresa_id || !motivo || !data_visita || !hora_prevista) {
+    res.status(400).json({ error: 'empresa_id, motivo, data_visita e hora_prevista são obrigatórios' }); return;
+  }
+  try {
+    res.status(201).json(await svc.solicitar(user.id, req.body));
+  } catch (err: any) {
+    res.status(err.code === 'JA_ATIVO' ? 409 : 500).json({ error: err.message });
+  }
+};
+
+export const meuStatus = async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const status = await svc.meuStatus(user.id);
+  res.json(status ?? { status: null });
+};

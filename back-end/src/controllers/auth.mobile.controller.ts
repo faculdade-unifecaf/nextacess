@@ -23,16 +23,21 @@ export const mobileLogin = async (req: Request, res: Response) => {
     res.json({ token, user: payload }); return;
   }
 
+  // Prioriza visita ativa (Aguardando/Aprovado/Em visita), senão a mais recente
   const visits = await sql`
-    SELECT id, nome_completo, email, cpf, status, qr_token, qr_expires_at
+    SELECT id, nome_completo, email, cpf, status, qr_token
     FROM visitantes
     WHERE email=${email}
       AND REGEXP_REPLACE(cpf, '[^0-9]', '', 'g') = ${cpfDigits}
+    ORDER BY
+      CASE WHEN status IN ('Aguardando','Aprovado','Em visita') THEN 0 ELSE 1 END,
+      created_at DESC
+    LIMIT 1
   `;
   if (visits[0]) {
     const v = visits[0] as any;
     const payload = {
-      id: v.id, nome: v.nome_completo, email: v.email,
+      id: v.id, nome: v.nome_completo, email: v.email, cpf: v.cpf,
       role: 'visitante', visitanteStatus: v.status,
       qr_token: v.qr_token ?? null,
     };

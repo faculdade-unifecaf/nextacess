@@ -87,6 +87,49 @@ export const aprovar = async (id: string, autorizado_por: string) => {
   return visitante;
 };
 
+export const solicitar = async (visitanteId: string, d: any) => {
+  const [origem] = await sql`SELECT cpf, nome_completo, email FROM visitantes WHERE id=${visitanteId}` as any[];
+  if (!origem) throw new Error('Visitante não encontrado');
+
+  const cpfDigits = (origem.cpf ?? '').replace(/\D/g, '');
+  const [ativo] = await sql`
+    SELECT id FROM visitantes
+    WHERE REGEXP_REPLACE(cpf, '[^0-9]', '', 'g') = ${cpfDigits}
+      AND status IN ('Aguardando','Aprovado','Em visita')
+  ` as any[];
+  if (ativo) throw Object.assign(new Error('Você já possui uma solicitação ativa.'), { code: 'JA_ATIVO' });
+
+  const [novo] = await sql`
+    INSERT INTO visitantes (nome_completo, cpf, email, empresa_id, motivo, data_visita, hora_prevista, status)
+    VALUES (${origem.nome_completo}, ${origem.cpf}, ${origem.email},
+            ${d.empresa_id}, ${d.motivo}, ${d.data_visita}, ${d.hora_prevista}, 'Aguardando')
+    RETURNING *
+  ` as any[];
+
+  push.sendToRoles(['admin'], {
+    title: 'Nova solicitação de acesso',
+    body: `${origem.nome_completo} solicita acesso via aplicativo.`,
+    data: { type: 'visitante', id: novo.id },
+  }).catch(() => {});
+
+  return novo;
+};
+
+export const meuStatus = async (visitanteId: string) => {
+  const [origem] = await sql`SELECT cpf FROM visitantes WHERE id=${visitanteId}` as any[];
+  if (!origem) return null;
+  const cpfDigits = (origem.cpf ?? '').replace(/\D/g, '');
+  const [ativo] = await sql`
+    SELECT id, status, qr_token, empresa_id,
+           (SELECT nome FROM empresas WHERE id = v.empresa_id) as empresa_nome
+    FROM visitantes v
+    WHERE REGEXP_REPLACE(cpf, '[^0-9]', '', 'g') = ${cpfDigits}
+      AND status IN ('Aguardando','Aprovado','Em visita')
+    ORDER BY created_at DESC LIMIT 1
+  ` as any[];
+  return ativo ?? null;
+};
+
 export const negar = async (id: string) =>
   (await sql`UPDATE visitantes SET status='Negado' WHERE id=${id} RETURNING *`)[0] ?? null;
 
