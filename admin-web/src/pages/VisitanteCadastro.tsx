@@ -107,9 +107,11 @@ export default function VisitanteCadastro() {
             <h1 style={{ fontSize: 22, fontWeight: 800, color: '#fff', margin: '0 0 8px' }}>
               Cadastro de Visitante
             </h1>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.6 }}>
-              Preencha o formulário abaixo. Você receberá um QR Code no seu e-mail para registrar entrada e saída.
-            </p>
+            {step === 'form' && (
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.6 }}>
+                Preencha o formulário abaixo. Você receberá um QR Code no seu e-mail para registrar entrada e saída.
+              </p>
+            )}
           </div>
 
           <div className="vc-body">
@@ -174,7 +176,7 @@ export default function VisitanteCadastro() {
                   animation: 'spin .8s linear infinite', margin: '0 auto 16px',
                 }} />
                 <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-                  Enviando QR Code para seu e-mail…
+                  Registrando seu cadastro…
                 </p>
               </div>
             )}
