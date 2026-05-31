@@ -1,5 +1,4 @@
 import nodemailer from 'nodemailer';
-import QRCode from 'qrcode';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -18,6 +17,7 @@ export interface VisitanteQRPayload {
   data_visita: string;
   hora_prevista?: string | undefined;
   qr_token: string;
+  qrBuffer: Buffer;
 }
 
 const fmtDate = (d: string) => {
@@ -25,17 +25,8 @@ const fmtDate = (d: string) => {
   return `${day}/${m}/${y}`;
 };
 
-export const sendVisitanteQR = async (p: VisitanteQRPayload) => {
+export const sendVisitanteQR = (p: VisitanteQRPayload) => {
   const msgId = `<${Date.now()}.${Math.random().toString(36).slice(2)}@nextaccess>`;
-
-  // PNG gerado com fundo branco e módulos pretos — máxima compatibilidade com leitores
-  const qrBuffer = await QRCode.toBuffer(p.qr_token, {
-    type: 'png',
-    width: 300,
-    margin: 3,
-    color: { dark: '#000000', light: '#ffffff' },
-  });
-
   return transporter.sendMail({
     from:      `"NextAccess" <${process.env.GMAIL_USER}>`,
     to:        p.to,
@@ -50,11 +41,11 @@ export const sendVisitanteQR = async (p: VisitanteQRPayload) => {
     text: buildText(p),
     html: buildHtml(p),
     attachments: [{
-      // Sem 'filename' → Gmail não exibe na seção de anexos, só renderiza inline via cid:
-      content:            qrBuffer,
+      filename:           'qrcode.png',
+      content:            p.qrBuffer,
       contentType:        'image/png',
       contentDisposition: 'inline',
-      cid:                'qr@nextaccess',
+      cid:                'qrcode@nextaccess',
     }],
   });
 };
@@ -145,15 +136,15 @@ function buildHtml(p: VisitanteQRPayload): string {
       </td></tr>
     </table>
 
-    <!-- QR Code via CID inline (sem filename = não aparece como anexo no Gmail) -->
+    <!-- QR Code — CID inline renderizado no corpo do email -->
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr><td align="center" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;padding:32px 24px">
-        <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#64748b">QR Code de Acesso</p>
-        <p style="margin:0 0 20px;font-size:12px;color:#94a3b8">Apresente na catraca de entrada</p>
-        <div style="display:inline-block;background:#ffffff;border-radius:12px;padding:12px;border:1px solid #e2e8f0;line-height:0">
-          <img src="cid:qr@nextaccess" width="220" height="220" alt="QR Code de acesso" style="display:block;border-radius:4px">
+      <tr><td align="center" style="background:linear-gradient(135deg,#0a0a12 0%,#0d0d1a 100%);border-radius:18px;padding:36px 24px;border:1px solid rgba(255,255,255,0.06)">
+        <p style="margin:0 0 4px;font-size:9px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;color:#4c9eff">QR Code de Acesso</p>
+        <p style="margin:0 0 20px;font-size:11px;color:rgba(255,255,255,0.35)">Apresente na catraca de entrada</p>
+        <div style="display:inline-block;background:#ffffff;border-radius:14px;padding:10px;line-height:0">
+          <img src="cid:qrcode@nextaccess" width="220" height="220" alt="QR Code de acesso NextAccess" style="display:block;border-radius:6px">
         </div>
-        <p style="margin:16px 0 0;font-size:12px;color:#94a3b8;font-family:'Courier New',Courier,monospace;letter-spacing:.2em">${p.qr_token.slice(0, 8).toUpperCase()}</p>
+        <p style="margin:16px 0 0;font-size:12px;color:rgba(255,255,255,0.3);font-family:'Courier New',Courier,monospace;letter-spacing:.18em">${p.qr_token.slice(0, 8).toUpperCase()}</p>
       </td></tr>
     </table>
 
@@ -161,7 +152,7 @@ function buildHtml(p: VisitanteQRPayload): string {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px">
       <tr><td style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px">
         <p style="margin:0;font-size:12px;color:#166534;line-height:1.6">
-          <strong>Dica:</strong> abra este email no celular e apresente o QR Code na catraca. Não é necessário imprimir.
+          <strong>Dica:</strong> abra este email no celular e apresente o QR Code diretamente na catraca. Não é necessário imprimir.
         </p>
       </td></tr>
     </table>
