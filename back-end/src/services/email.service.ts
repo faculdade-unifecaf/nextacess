@@ -28,17 +28,13 @@ const fmtDate = (d: string) => {
 export const sendVisitanteQR = async (p: VisitanteQRPayload) => {
   const msgId = `<${Date.now()}.${Math.random().toString(36).slice(2)}@nextaccess>`;
 
-  // SVG inline — sem anexo, sem data: URL, funciona em qualquer cliente
-  const svgRaw = await QRCode.toString(p.qr_token, {
-    type: 'svg',
-    width: 200,
-    margin: 2,
+  // PNG gerado com fundo branco e módulos pretos — máxima compatibilidade com leitores
+  const qrBuffer = await QRCode.toBuffer(p.qr_token, {
+    type: 'png',
+    width: 300,
+    margin: 3,
     color: { dark: '#000000', light: '#ffffff' },
   });
-  // Remove XML declaration/DOCTYPE e garante dimensões explícitas para clientes de email
-  const qrSvg = svgRaw
-    .replace(/^[\s\S]*?(<svg)/, '$1')
-    .replace('<svg ', '<svg width="200" height="200" ');
 
   return transporter.sendMail({
     from:      `"NextAccess" <${process.env.GMAIL_USER}>`,
@@ -52,7 +48,14 @@ export const sendVisitanteQR = async (p: VisitanteQRPayload) => {
       'List-Unsubscribe': `<mailto:${process.env.GMAIL_USER}?subject=unsubscribe>`,
     },
     text: buildText(p),
-    html: buildHtml(p, qrSvg),
+    html: buildHtml(p),
+    attachments: [{
+      // Sem 'filename' → Gmail não exibe na seção de anexos, só renderiza inline via cid:
+      content:            qrBuffer,
+      contentType:        'image/png',
+      contentDisposition: 'inline',
+      cid:                'qr@nextaccess',
+    }],
   });
 };
 
@@ -61,7 +64,7 @@ function buildText(p: VisitanteQRPayload): string {
   return [
     `Olá, ${p.nome}!`,
     '',
-    'Seu acesso foi aprovado. Apresente o QR Code na recepção no dia da visita.',
+    'Seu acesso foi aprovado. Apresente o QR Code na catraca de entrada no dia da visita.',
     '',
     `Empresa: ${p.empresa}`,
     `Localização: ${p.andar}º andar · Sala ${p.sala}`,
@@ -70,13 +73,13 @@ function buildText(p: VisitanteQRPayload): string {
     '',
     `Código de acesso: ${p.qr_token.slice(0, 8).toUpperCase()}`,
     '',
-    'Abra este email no seu celular e apresente o QR Code na recepção.',
+    'Abra este email no celular e apresente o QR Code na catraca.',
     '',
     '© 2026 NextAccess',
   ].filter(Boolean).join('\n');
 }
 
-function buildHtml(p: VisitanteQRPayload, qrSvg: string): string {
+function buildHtml(p: VisitanteQRPayload): string {
   const data = fmtDate(p.data_visita);
   const horario = p.hora_prevista
     ? `<tr>
@@ -97,7 +100,7 @@ function buildHtml(p: VisitanteQRPayload, qrSvg: string): string {
 <body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%">
 
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all">
-  Olá ${p.nome}, seu acesso para ${p.empresa} foi aprovado. Apresente o QR Code na recepção. ‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌
+  Olá ${p.nome}, seu acesso para ${p.empresa} foi aprovado. Apresente o QR Code na catraca. ‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌
 </div>
 
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;padding:40px 16px">
@@ -117,7 +120,7 @@ function buildHtml(p: VisitanteQRPayload, qrSvg: string): string {
 
     <p style="margin:0 0 4px;font-size:22px;font-weight:800;color:#0f172a;line-height:1.2">Olá, ${p.nome}!</p>
     <p style="margin:0 0 28px;font-size:14px;color:#64748b;line-height:1.7">
-      Seu acesso foi <strong style="color:#16a34a">aprovado</strong>. Apresente o QR Code abaixo na recepção no dia da visita para registrar sua entrada e saída.
+      Seu acesso foi <strong style="color:#16a34a">aprovado</strong>. Apresente o QR Code abaixo na <strong style="color:#0f172a">catraca de entrada</strong> no dia da visita.
     </p>
 
     <!-- Info card -->
@@ -142,23 +145,23 @@ function buildHtml(p: VisitanteQRPayload, qrSvg: string): string {
       </td></tr>
     </table>
 
-    <!-- QR Code — SVG embutido diretamente no HTML, sem anexo -->
+    <!-- QR Code via CID inline (sem filename = não aparece como anexo no Gmail) -->
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr><td align="center" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;padding:32px 24px">
         <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#64748b">QR Code de Acesso</p>
-        <p style="margin:0 0 20px;font-size:12px;color:#94a3b8">Apresente na recepção</p>
+        <p style="margin:0 0 20px;font-size:12px;color:#94a3b8">Apresente na catraca de entrada</p>
         <div style="display:inline-block;background:#ffffff;border-radius:12px;padding:12px;border:1px solid #e2e8f0;line-height:0">
-          ${qrSvg}
+          <img src="cid:qr@nextaccess" width="220" height="220" alt="QR Code de acesso" style="display:block;border-radius:4px">
         </div>
         <p style="margin:16px 0 0;font-size:12px;color:#94a3b8;font-family:'Courier New',Courier,monospace;letter-spacing:.2em">${p.qr_token.slice(0, 8).toUpperCase()}</p>
       </td></tr>
     </table>
 
-    <!-- Aviso de validade -->
+    <!-- Dica -->
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px">
       <tr><td style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px">
         <p style="margin:0;font-size:12px;color:#166534;line-height:1.6">
-          <strong>Dica:</strong> salve este email no celular para apresentar na recepção facilmente.
+          <strong>Dica:</strong> abra este email no celular e apresente o QR Code na catraca. Não é necessário imprimir.
         </p>
       </td></tr>
     </table>
