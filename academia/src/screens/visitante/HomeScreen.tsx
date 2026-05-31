@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ActivityIndicator, TouchableOpacity,
-  Animated, ScrollView, TextInput, Alert,
+  Animated, ScrollView, TextInput, Alert, AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
@@ -174,6 +174,19 @@ export default function VisitanteHomeScreen() {
   const { user, refreshVisitanteStatus, solicitarAcesso } = useAuth();
   const accessResult = useAccessResult(user?.id);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Atualiza status ao montar (caso empresa tenha aprovado antes do app abrir)
+  useEffect(() => {
+    refreshVisitanteStatus();
+  }, []);
+
+  // Atualiza quando o app volta ao foreground
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') refreshVisitanteStatus();
+    });
+    return () => sub.remove();
+  }, []);
 
   if (!user) return null;
 

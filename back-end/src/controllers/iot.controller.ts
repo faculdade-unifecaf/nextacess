@@ -83,11 +83,11 @@ export const validarQR = async (req: Request, res: Response) => {
     res.json(result); return;
   }
 
-  // Verifica visitantes internos (cadastrados pela recepção)
+  // Verifica visitantes internos (cadastrados pela recepção ou via app)
   const visits = await sql`SELECT id, nome_completo, status, empresa_id FROM visitantes WHERE id=${userId}`;
   if (visits[0]) {
     const v = visits[0] as any;
-    if (v.status !== 'Aprovado') {
+    if (v.status !== 'Aprovado' && v.status !== 'Em visita') {
       const result = { autorizado: false, motivo: `Visitante com status: ${v.status}` };
       recentAccess.set(userId, { result, at: Date.now() });
       res.status(401).json(result); return;
@@ -95,12 +95,18 @@ export const validarQR = async (req: Request, res: Response) => {
     const emp = v.empresa_id
       ? (await sql`SELECT nome, andar FROM empresas WHERE id=${v.empresa_id}`)[0] as any
       : null;
+    const isEntrada = v.status === 'Aprovado';
+    const tipo      = isEntrada ? 'Entrada' : 'Saída';
     await acessosSvc.create({
       pessoa_nome: v.nome_completo, pessoa_tipo: 'visitante',
       empresa: emp?.nome ?? null, andar: emp?.andar ?? null,
-      tipo: 'Entrada', status: 'Autorizado', local: 'Catraca Principal',
+      tipo, status: 'Autorizado', local: 'Catraca Principal',
     });
-    await sql`UPDATE visitantes SET status='Em visita', hora_entrada=NOW() WHERE id=${v.id}`;
+    if (isEntrada) {
+      await sql`UPDATE visitantes SET status='Em visita', hora_entrada=NOW() WHERE id=${v.id}`;
+    } else {
+      await sql`UPDATE visitantes SET status='Saiu', hora_saida=NOW() WHERE id=${v.id}`;
+    }
     const result = { autorizado: true, nome: v.nome_completo, tipo: 'visitante', empresa: emp?.nome ?? null };
     recentAccess.set(userId, { result, at: Date.now() });
     res.json(result); return;
