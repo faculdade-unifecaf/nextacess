@@ -16,6 +16,22 @@ const fmtCpf = (cpf: string) => {
   return `${c.slice(0,3)}.${c.slice(3,6)}.${c.slice(6,9)}-${c.slice(9)}`;
 };
 
+const maskCpf = (v: string) => {
+  const c = v.replace(/\D/g, '').slice(0, 11);
+  if (c.length <= 3)  return c;
+  if (c.length <= 6)  return `${c.slice(0,3)}.${c.slice(3)}`;
+  if (c.length <= 9)  return `${c.slice(0,3)}.${c.slice(3,6)}.${c.slice(6)}`;
+  return `${c.slice(0,3)}.${c.slice(3,6)}.${c.slice(6,9)}-${c.slice(9)}`;
+};
+
+const maskPhone = (v: string) => {
+  const c = v.replace(/\D/g, '').slice(0, 11);
+  if (c.length <= 2)  return c.length ? `(${c}` : '';
+  if (c.length <= 6)  return `(${c.slice(0,2)}) ${c.slice(2)}`;
+  if (c.length <= 10) return `(${c.slice(0,2)}) ${c.slice(2,6)}-${c.slice(6)}`;
+  return `(${c.slice(0,2)}) ${c.slice(2,7)}-${c.slice(7)}`;
+};
+
 const fmtDate = (d?: string) => {
   if (!d) return '—';
   const [y, m, day] = d.split('T')[0]!.split('-');
@@ -56,6 +72,8 @@ function VisitanteModal({ onClose, onSave, initial, empresas, funcionarios }: {
   const [form, setForm] = useState({
     nome_completo:  initial?.nome_completo  || '',
     cpf:            initial?.cpf            || '',
+    email:          (initial as any)?.email          || '',
+    telefone:       (initial as any)?.telefone       || '',
     empresa_id:     initial?.empresa_id     || empresas[0]?.id || '',
     funcionario_id: initial?.funcionario_id || '',
     motivo:         initial?.motivo         || '',
@@ -96,7 +114,11 @@ function VisitanteModal({ onClose, onSave, initial, empresas, funcionarios }: {
         )}
         <div className="form-row">
           <div className="form-group"><label>Nome Completo *</label><input value={form.nome_completo} onChange={e => set('nome_completo', e.target.value)} placeholder="Nome do visitante" /></div>
-          <div className="form-group"><label>CPF *</label><input value={form.cpf} onChange={e => set('cpf', e.target.value)} placeholder="000.000.000-00" /></div>
+          <div className="form-group"><label>CPF *</label><input value={form.cpf} onChange={e => set('cpf', maskCpf(e.target.value))} placeholder="000.000.000-00" /></div>
+        </div>
+        <div className="form-row">
+          <div className="form-group"><label>E-mail</label><input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="visitante@email.com" /></div>
+          <div className="form-group"><label>Telefone</label><input value={form.telefone} onChange={e => set('telefone', maskPhone(e.target.value))} placeholder="(11) 99999-0000" /></div>
         </div>
         <div className="form-group">
           <label>Empresa *</label>
@@ -111,7 +133,6 @@ function VisitanteModal({ onClose, onSave, initial, empresas, funcionarios }: {
             {funcsEmpresa.map(f => <option key={f.id} value={f.id}>{f.nome_completo}</option>)}
           </select>
         </div>
-        <div className="form-group"><label>Motivo da visita</label><input value={form.motivo} onChange={e => set('motivo', e.target.value)} placeholder="Ex: Reunião comercial" /></div>
         <div className="form-row">
           <div className="form-group"><label>Data da visita</label><input type="date" value={form.data_visita} onChange={e => set('data_visita', e.target.value)} /></div>
           <div className="form-group"><label>Hora prevista</label><input type="time" value={form.hora_prevista} onChange={e => set('hora_prevista', e.target.value)} /></div>

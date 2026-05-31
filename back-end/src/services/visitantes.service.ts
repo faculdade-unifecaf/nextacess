@@ -52,6 +52,7 @@ export const create = async (d: any) => {
 export const update = async (id: string, d: any) =>
   (await sql`
     UPDATE visitantes SET nome_completo=${d.nome_completo}, cpf=${d.cpf ?? null},
+      email=${d.email ?? null}, telefone=${d.telefone ?? null},
       empresa_id=${d.empresa_id ?? null}, funcionario_id=${d.funcionario_id ?? null},
       motivo=${d.motivo ?? null}, data_visita=${d.data_visita}, hora_prevista=${d.hora_prevista},
       status=${d.status}
