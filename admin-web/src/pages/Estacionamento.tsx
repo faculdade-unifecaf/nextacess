@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
-import { Car, ParkingCircle, Settings, Users, RefreshCw, Save, Clock, Banknote, AlertCircle, ArrowUpRight, Crown, ShieldOff } from 'lucide-react';
+import { Car, ParkingCircle, Settings, Users, RefreshCw, Save, Clock, AlertCircle, ArrowUpRight, Crown, ShieldOff } from 'lucide-react';
 import axios from 'axios';
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
@@ -59,9 +59,8 @@ export default function Estacionamento() {
   const [tarifa,   setTarifa]   = useState<Tarifa | null>(null);
   const [form,     setForm]     = useState<Tarifa | null>(null);
   const [loading,  setLoading]  = useState(true);
-  const [saving,   setSaving]   = useState(false);
-  const [cobrando, setCobrando] = useState<string | null>(null);
-  const [tab,      setTab]      = useState<'dashboard' | 'mensalistas' | 'sessoes' | 'tarifas'>('dashboard');
+  const [saving, setSaving] = useState(false);
+  const [tab,    setTab]    = useState<'dashboard' | 'mensalistas' | 'sessoes' | 'tarifas'>('dashboard');
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -89,17 +88,6 @@ export default function Estacionamento() {
       alert('Tarifas atualizadas com sucesso!');
     } catch { alert('Erro ao salvar tarifas'); }
     finally { setSaving(false); }
-  };
-
-  const cobrarBalcao = async (sessao: Sessao) => {
-    if (!confirm(`Registrar pagamento de R$ ${calcularCustoEstimado(sessao)} no balcão para ${sessao.nome_usuario ?? 'usuário'}?`)) return;
-    setCobrando(sessao.id);
-    try {
-      await axios.post(`${API}/estacionamento/sessao/${sessao.id}/pagar-balcao`, {}, h());
-      await carregar();
-    } catch (e: any) {
-      alert(e?.response?.data?.error ?? 'Erro ao registrar pagamento');
-    } finally { setCobrando(null); }
   };
 
   const calcularCustoEstimado = (s: Sessao) => {
@@ -308,26 +296,26 @@ export default function Estacionamento() {
                     <th>Usuário</th>
                     <th>Placa</th>
                     <th>Entrada</th>
+                    <th>Saída</th>
                     <th>Permanência</th>
                     <th>Valor</th>
                     <th>Status</th>
                     <th>Pagamento</th>
-                    <th>Ação</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sessoes.length === 0 ? (
                     <tr>
                       <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px 0' }}>
-                        Nenhuma sessão registrada
+                        Nenhum acesso registrado
                       </td>
                     </tr>
                   ) : sessoes.map(s => {
-                    const stCfg     = STATUS_SESSAO[s.status] ?? { cls: 'badge-neutral', label: s.status };
-                    const roleCfg   = ROLE_CFG[s.role_usuario ?? 'visitante'] ?? ROLE_CFG.visitante;
-                    const podeBalcao = ['ativa', 'aguardando_pagamento'].includes(s.status) && !s.saida;
+                    const stCfg   = STATUS_SESSAO[s.status] ?? { cls: 'badge-neutral', label: s.status };
+                    const roleCfg = ROLE_CFG[s.role_usuario ?? 'visitante'] ?? ROLE_CFG.visitante;
                     return (
                       <tr key={s.id}>
+                        {/* Usuário */}
                         <td>
                           <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>
                             {s.nome_usuario ?? <span style={{ color: 'var(--text-muted)' }}>—</span>}
@@ -336,10 +324,12 @@ export default function Estacionamento() {
                           <span className={`badge ${roleCfg.cls}`} style={{ marginTop: 4, display: 'inline-flex' }}>{roleCfg.label}</span>
                         </td>
 
+                        {/* Placa */}
                         <td style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 13, letterSpacing: '0.05em' }}>
                           {formatPlaca(s.placa)}
                         </td>
 
+                        {/* Entrada */}
                         <td>
                           <div style={{ fontSize: 13, fontWeight: 600 }}>{new Date(s.entrada).toLocaleDateString('pt-BR')}</div>
                           <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -348,8 +338,25 @@ export default function Estacionamento() {
                           </div>
                         </td>
 
+                        {/* Saída */}
+                        <td>
+                          {s.saida ? (
+                            <>
+                              <div style={{ fontSize: 13, fontWeight: 600 }}>{new Date(s.saida).toLocaleDateString('pt-BR')}</div>
+                              <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                                <Clock size={10} />
+                                {new Date(s.saida).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </>
+                          ) : (
+                            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>—</span>
+                          )}
+                        </td>
+
+                        {/* Permanência */}
                         <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{duracao(s.entrada, s.saida)}</td>
 
+                        {/* Valor */}
                         <td style={{ fontWeight: 700 }}>
                           R$ {calcularCustoEstimado(s)}
                           {!s.valor_cobrado && s.status !== 'paga' && (
@@ -357,31 +364,17 @@ export default function Estacionamento() {
                           )}
                         </td>
 
+                        {/* Status */}
                         <td>
                           <span className={`badge ${stCfg.cls}`}>{stCfg.label}</span>
-                          {s.saida && (
-                            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
-                              Saiu {new Date(s.saida).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                          )}
                         </td>
 
+                        {/* Pagamento */}
                         <td>
                           {s.status === 'paga' ? (
                             <span className={`badge ${s.origem_pagamento === 'balcao' ? 'badge-purple' : 'badge-green'}`}>
                               {s.origem_pagamento === 'balcao' ? 'Balcão' : 'App'}
                             </span>
-                          ) : <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>}
-                        </td>
-
-                        <td>
-                          {podeBalcao ? (
-                            <button onClick={() => cobrarBalcao(s)} disabled={cobrando === s.id}
-                              className="btn btn-sm"
-                              style={{ background: 'var(--amber-dim)', color: 'var(--amber)', border: '1px solid rgba(255,170,0,0.25)', opacity: cobrando === s.id ? 0.6 : 1 }}>
-                              <Banknote size={13} />
-                              {cobrando === s.id ? 'Registrando...' : 'Cobrar Balcão'}
-                            </button>
                           ) : <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>}
                         </td>
                       </tr>

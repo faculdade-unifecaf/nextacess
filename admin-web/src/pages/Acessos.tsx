@@ -70,18 +70,18 @@ export default function Acessos() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        <div className="search-wrapper" style={{ maxWidth: 280 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'nowrap', overflowX: 'auto' }}>
+        <div className="search-wrapper" style={{ minWidth: 220, flex: '1 1 220px', maxWidth: 320 }}>
           <Search size={14} />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar pessoa ou empresa..." />
         </div>
         <input
           type="date" value={filterData} onChange={e => setFilterData(e.target.value)}
-          style={{ padding: '8px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit' }}
+          style={{ padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit', flexShrink: 0 }}
         />
         <select
           value={filterTipo} onChange={e => setFilterTipo(e.target.value as TipoAcesso | '')}
-          style={{ padding: '8px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit' }}
+          style={{ padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit', flexShrink: 0 }}
         >
           <option value="">Entrada e Saída</option>
           <option value="Entrada">Entrada</option>
@@ -89,15 +89,15 @@ export default function Acessos() {
         </select>
         <select
           value={filterStatus} onChange={e => setFilterStatus(e.target.value as StatusAcesso | '')}
-          style={{ padding: '8px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit' }}
+          style={{ padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit', flexShrink: 0 }}
         >
           <option value="">Todos os status</option>
           <option value="Autorizado">Autorizado</option>
           <option value="Negado">Negado</option>
         </select>
         {(search || filterTipo || filterStatus || filterData) && (
-          <button className="btn btn-secondary btn-sm" onClick={() => { setSearch(''); setFilterTipo(''); setFilterStatus(''); setFilterData(''); }}>
-            Limpar filtros
+          <button className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }} onClick={() => { setSearch(''); setFilterTipo(''); setFilterStatus(''); setFilterData(''); }}>
+            Limpar
           </button>
         )}
       </div>
