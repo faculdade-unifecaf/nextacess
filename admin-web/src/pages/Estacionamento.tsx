@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 import { Car, ParkingCircle, Settings, Users, RefreshCw, Save, Clock, AlertCircle, ArrowUpRight, Crown, ShieldOff } from 'lucide-react';
 import axios from 'axios';
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
+const API = `${(import.meta.env.VITE_API_URL ?? 'http://localhost:3000').replace(/\/$/, '')}/api`;
 const token = () => localStorage.getItem('token') ?? '';
 const h = () => ({ headers: { Authorization: `Bearer ${token()}` } });
 

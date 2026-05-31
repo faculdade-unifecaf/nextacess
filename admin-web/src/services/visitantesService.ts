@@ -27,12 +27,12 @@ export const visitantesService = {
   },
 
   async approve(id: string, autorizado_por: string): Promise<Visitante> {
-    const response = await api.patch(`/visitantes/${id}/approve`, { autorizado_por });
+    const response = await api.patch(`/visitantes/${id}/aprovar`, { autorizado_por });
     return response.data;
   },
 
   async deny(id: string): Promise<Visitante> {
-    const response = await api.patch(`/visitantes/${id}/deny`);
+    const response = await api.patch(`/visitantes/${id}/negar`);
     return response.data;
   },
 };

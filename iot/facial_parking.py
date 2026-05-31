@@ -19,7 +19,7 @@ except ImportError:
     print("[AVISO] face_recognition não instalado. Rode: pip install face_recognition")
     FR_AVAILABLE = False
 
-API_BASE   = "http://localhost:3000/api"
+API_BASE   = os.environ.get("NEXTACCESS_API_URL", "http://localhost:3000") + "/api"
 CAMERA_IDX = None   # None = auto-detecta; ou force ex: 1 para USB
 
 GREEN  = (0, 220, 80)
