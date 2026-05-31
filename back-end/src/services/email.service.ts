@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import QRCode from 'qrcode';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -24,24 +25,28 @@ const fmtDate = (d: string) => {
   return `${day}/${m}/${y}`;
 };
 
-export const sendVisitanteQR = (p: VisitanteQRPayload) => {
-  const msgId    = `<${Date.now()}.${Math.random().toString(36).slice(2)}@nextaccess>`;
-  const base     = (process.env.BACKEND_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  const qrImgUrl = `${base}/api/publico/qr-image/${encodeURIComponent(p.qr_token)}`;
+export const sendVisitanteQR = async (p: VisitanteQRPayload) => {
+  const msgId     = `<${Date.now()}.${Math.random().toString(36).slice(2)}@nextaccess>`;
+  // data URL embutida → Nodemailer converte para CID attachment com MIME correto
+  const qrDataUrl = await QRCode.toDataURL(p.qr_token, {
+    width: 300, margin: 3,
+    color: { dark: '#000000', light: '#ffffff' },
+  });
 
   return transporter.sendMail({
-    from:      `"NextAccess" <${process.env.GMAIL_USER}>`,
-    to:        p.to,
-    replyTo:   process.env.GMAIL_USER,
-    subject:   `Seu acesso foi aprovado — ${p.empresa}`,
-    messageId: msgId,
+    from:           `"NextAccess" <${process.env.GMAIL_USER}>`,
+    to:             p.to,
+    replyTo:        process.env.GMAIL_USER,
+    subject:        `Seu acesso foi aprovado — ${p.empresa}`,
+    messageId:      msgId,
+    attachDataUrls: true,   // converte data: URLs do HTML em CID attachments automaticamente
     headers: {
       'X-Priority':       '3',
       'X-Mailer':         'NextAccess Mailer',
       'List-Unsubscribe': `<mailto:${process.env.GMAIL_USER}?subject=unsubscribe>`,
     },
     text: buildText(p),
-    html: buildHtml(p, qrImgUrl),
+    html: buildHtml(p, qrDataUrl),
   });
 };
 
@@ -65,7 +70,7 @@ function buildText(p: VisitanteQRPayload): string {
   ].filter(Boolean).join('\n');
 }
 
-function buildHtml(p: VisitanteQRPayload, qrImgUrl: string): string {
+function buildHtml(p: VisitanteQRPayload, qrDataUrl: string): string {
   const data = fmtDate(p.data_visita);
   const horario = p.hora_prevista
     ? `<tr>
@@ -137,7 +142,7 @@ function buildHtml(p: VisitanteQRPayload, qrImgUrl: string): string {
         <p style="margin:0 0 4px;font-size:9px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;color:#4c9eff">QR Code de Acesso</p>
         <p style="margin:0 0 20px;font-size:11px;color:rgba(255,255,255,0.35)">Apresente na catraca de entrada</p>
         <div style="display:inline-block;background:#ffffff;border-radius:14px;padding:10px;line-height:0">
-          <img src="${qrImgUrl}" width="220" height="220" alt="QR Code de acesso NextAccess" style="display:block;border-radius:6px">
+          <img src="${qrDataUrl}" width="220" height="220" alt="QR Code de acesso NextAccess" style="display:block;border-radius:6px">
         </div>
         <p style="margin:16px 0 0;font-size:12px;color:rgba(255,255,255,0.3);font-family:'Courier New',Courier,monospace;letter-spacing:.18em">${p.qr_token.slice(0, 8).toUpperCase()}</p>
       </td></tr>
