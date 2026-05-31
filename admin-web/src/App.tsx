@@ -5,6 +5,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { authService } from './services/authService';
 
 import Login from './pages/Login';
+import VisitanteCadastro from './pages/VisitanteCadastro';
 import Dashboard from './pages/Dashboard';
 import Empresas from './pages/Empresas';
 import Funcionarios from './pages/Funcionarios';
@@ -36,6 +37,7 @@ export default function App() {
       <ThemeProvider>
       <AdminProvider>
         <Routes>
+          <Route path="/cadastro" element={<VisitanteCadastro />} />
           <Route path="/login" element={
             isAuth ? <Navigate to="/" replace /> : <Login onLogin={() => setIsAuth(true)} />
           } />

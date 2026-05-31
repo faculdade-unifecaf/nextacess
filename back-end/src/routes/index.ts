@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { auth } from '../middleware/auth';
 import authRoutes         from './auth.routes';
+import publicoRoutes      from './visitante.publico.routes';
 import empresasRoutes     from './empresas.routes';
 import funcionariosRoutes from './funcionarios.routes';
 import visitantesRoutes   from './visitantes.routes';
@@ -14,6 +15,7 @@ import facialRoutes         from './facial.routes';
 const router = Router();
 
 router.use('/auth',           authRoutes);
+router.use('/publico',        publicoRoutes); // sem autenticação — acesso público
 router.use('/iot',            iotRoutes);
 router.use('/facial',         facialRoutes);
 router.use('/estacionamento', auth, estacionamentoRoutes);
