@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
-import { Car, ParkingCircle, Settings, Users, DollarSign, RefreshCw, Save, Clock, Banknote, AlertCircle } from 'lucide-react';
+import { Car, ParkingCircle, Settings, Users, DollarSign, RefreshCw, Save, Clock, Banknote, AlertCircle, ArrowUpRight, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
@@ -110,9 +110,9 @@ export default function Estacionamento() {
   };
 
   const tabs: { id: 'dashboard' | 'sessoes' | 'tarifas'; label: string }[] = [
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'sessoes',   label: 'Sessões'   },
-    { id: 'tarifas',   label: 'Tarifas'   },
+    { id: 'dashboard', label: 'Dashboard'                },
+    { id: 'sessoes',   label: 'Acessos do Estacionamento' },
+    { id: 'tarifas',   label: 'Tarifas'                  },
   ];
 
   // Sessões que precisam de atenção da recepção (sem saída e ainda abertas)
@@ -156,19 +156,26 @@ export default function Estacionamento() {
           {tab === 'dashboard' && stats && (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 24 }}>
-                {[
-                  { Icon: Users,         label: 'Mensalistas',    value: stats.mensalistas,    color: 'var(--amber)' },
-                  { Icon: Car,           label: 'Entradas hoje',  value: stats.entradas_hoje,  color: 'var(--blue)'  },
-                  { Icon: ParkingCircle, label: 'Dentro agora',   value: stats.sessoes_ativas, color: 'var(--green)' },
-                  { Icon: DollarSign,    label: 'Faturado hoje',  value: `R$ ${Number(stats.faturamento_hoje).toFixed(2)}`, color: 'var(--green)' },
-                ].map(({ Icon, label, value, color }) => (
-                  <div key={label} className="stat-card" style={{ borderColor: `${color}22` }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${color}, transparent)`, borderRadius: '18px 18px 0 0' }} />
-                    <div className="stat-icon" style={{ background: `${color}18` }}>
-                      <Icon size={20} color={color} />
+                {([
+                  { Icon: Users,         label: 'Mensalistas',    value: stats.mensalistas,    color: '#ffaa00', sub: 'planos ativos',         trend: 'Este mês',      pos: true  },
+                  { Icon: Car,           label: 'Entradas hoje',  value: stats.entradas_hoje,  color: '#4c9eff', sub: 'registros de acesso',   trend: 'Hoje',          pos: true  },
+                  { Icon: ParkingCircle, label: 'Dentro agora',   value: stats.sessoes_ativas, color: '#22d35e', sub: 'sem saída registrada',  trend: stats.sessoes_ativas > 0 ? `${stats.sessoes_ativas} veículo${stats.sessoes_ativas > 1 ? 's' : ''}` : 'Vazio', pos: true },
+                  { Icon: DollarSign,    label: 'Faturado hoje',  value: `R$ ${Number(stats.faturamento_hoje).toFixed(2)}`, color: '#22d35e', sub: 'sessões pagas',  trend: 'Hoje',          pos: true  },
+                ] as { Icon: React.ElementType; label: string; value: string | number; color: string; sub: string; trend: string; pos: boolean }[]).map((s) => (
+                  <div key={s.label} className="stat-card" style={{ borderColor: `${s.color}22` }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${s.color}, transparent)`, borderRadius: '18px 18px 0 0' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div className="stat-icon" style={{ background: `${s.color}18`, borderRadius: 14 }}>
+                        <s.Icon size={20} color={s.color} />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: s.pos ? 'var(--green)' : 'var(--red)', padding: '3px 8px', borderRadius: 20, background: s.pos ? 'rgba(34,211,94,0.08)' : 'rgba(255,58,58,0.08)' }}>
+                        {s.pos ? <ArrowUpRight size={10} /> : <AlertTriangle size={10} />}
+                        {s.trend}
+                      </div>
                     </div>
-                    <div className="stat-value" style={{ color, fontSize: typeof value === 'string' ? 22 : 30, marginTop: 14 }}>{value}</div>
-                    <div className="stat-label" style={{ marginTop: 4 }}>{label}</div>
+                    <div className="stat-value" style={{ color: s.color, marginTop: 14, fontSize: 30 }}>{s.value}</div>
+                    <div className="stat-label" style={{ marginTop: 4 }}>{s.label}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>{s.sub}</div>
                   </div>
                 ))}
               </div>
@@ -203,7 +210,7 @@ export default function Estacionamento() {
                   <AlertCircle size={18} />
                   <div>
                     <strong>{sessoesAbertas.length} veículo(s) no estacionamento sem pagamento.</strong>{' '}
-                    Acesse <strong>Sessões</strong> para visualizar e registrar pagamento no balcão se necessário.
+                    Acesse <strong>Acessos do Estacionamento</strong> para visualizar e registrar pagamento no balcão se necessário.
                   </div>
                 </div>
               )}
