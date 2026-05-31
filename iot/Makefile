@@ -4,7 +4,7 @@
 #  COMANDOS RÁPIDOS:
 #
 #  make install     →  instala todas as dependências Python (primeira vez)
-#  make run         →  roda o leitor de QR Code (câmera embutida)
+#  make qr          →  roda o leitor de QR Code (câmera embutida)
 #  make facial      →  roda o reconhecimento facial (câmera USB ou embutida)
 #  make ambos       →  roda QR e facial ao mesmo tempo (câmeras separadas)
 #  make diagnostico →  testa se a câmera e o QR estão funcionando
@@ -23,7 +23,7 @@ VENV   = venv
 PYTHON = $(VENV)/bin/python
 PIP    = $(VENV)/bin/pip
 
-.PHONY: install run facial ambos diagnostico camera-list setup
+.PHONY: install qr facial ambos diagnostico camera-list setup
 
 # ── Instala tudo (inclui dependências do dlib/face_recognition) ──
 install:
@@ -47,7 +47,7 @@ install:
 	@echo ""
 
 # ── QR Code (câmera embutida / índice 0) ──────────────────────
-run:
+qr:
 	$(PYTHON) camera.py
 
 # ── Reconhecimento facial (auto-detecta câmera) ───────────────
@@ -57,7 +57,7 @@ facial:
 # ── Roda os dois ao mesmo tempo (cada um em sua câmera) ───────
 ambos:
 	@echo "  Iniciando QR Code e Facial em paralelo..."
-	@$(PYTHON) camera.py        > /tmp/iot-qr.log     2>&1 &
+	@$(PYTHON) camera.py         > /tmp/iot-qr.log     2>&1 &
 	@$(PYTHON) facial_parking.py > /tmp/iot-facial.log 2>&1 &
 	@echo "  QR Code  -> /tmp/iot-qr.log"
 	@echo "  Facial   -> /tmp/iot-facial.log"
