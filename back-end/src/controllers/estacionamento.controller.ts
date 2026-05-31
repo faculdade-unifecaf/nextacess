@@ -164,6 +164,10 @@ export const getAllSessoes = async (_req: Request, res: Response) => {
   res.json(await svc.getSessoes());
 };
 
+export const getTodosPlanos = async (_req: Request, res: Response) => {
+  res.json(await svc.getTodosPlanos());
+};
+
 export const simularPagamento = async (req: Request, res: Response) => {
   try {
     const result = await svc.simularPagamento(req.params['id'] as string);

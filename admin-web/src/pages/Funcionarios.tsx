@@ -4,6 +4,12 @@ import { useAdmin } from '../context/AdminContext';
 import { Plus, Users, X, Check, Trash2, Edit2, Search, ShieldCheck } from 'lucide-react';
 import type { Funcionario, StatusFuncionario, RoleFuncionario } from '../data/mockData';
 
+const fmtCpf = (cpf: string) => {
+  const c = cpf.replace(/\D/g, '');
+  if (c.length !== 11) return cpf;
+  return `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6, 9)}-${c.slice(9)}`;
+};
+
 function FuncionarioModal({ onClose, onSave, initial, empresas }: {
   onClose: () => void;
   onSave: (data: Omit<Funcionario, 'id' | 'avatarColor'>) => void;
@@ -17,7 +23,6 @@ function FuncionarioModal({ onClose, onSave, initial, empresas }: {
     email: initial?.email || '',
     telefone: initial?.telefone || '',
     empresa_id: initial?.empresa_id || empresas[0]?.id || '',
-    cargo: initial?.cargo || '',
     role: (initial?.role || 'funcionario') as RoleFuncionario,
     status: (initial?.status || 'Ativo') as StatusFuncionario,
     data_cadastro: initial?.data_cadastro || hoje,
@@ -37,7 +42,7 @@ function FuncionarioModal({ onClose, onSave, initial, empresas }: {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 540 }}>
         <div className="modal-header">
-          <h3 className="modal-title">{initial?.nome_completo ? 'Editar Funcionário' : 'Novo Funcionário'}</h3>
+          <h3 className="modal-title">{initial?.nome_completo ? 'Editar Usuário' : 'Novo Usuário'}</h3>
           <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="form-row">
@@ -54,15 +59,12 @@ function FuncionarioModal({ onClose, onSave, initial, empresas }: {
             {empresas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
           </select>
         </div>
-        <div className="form-row">
-          <div className="form-group"><label>Cargo</label><input value={form.cargo} onChange={e => set('cargo', e.target.value)} placeholder="Ex: Analista de TI" /></div>
-          <div className="form-group">
-            <label>Perfil de acesso</label>
-            <select value={form.role} onChange={e => set('role', e.target.value as RoleFuncionario)}>
-              <option value="funcionario">Funcionário</option>
-              <option value="admin">Administrador</option>
-            </select>
-          </div>
+        <div className="form-group">
+          <label>Perfil de acesso</label>
+          <select value={form.role} onChange={e => set('role', e.target.value as RoleFuncionario)}>
+            <option value="funcionario">Usuário</option>
+            <option value="admin">Administrador</option>
+          </select>
         </div>
         {initial?.nome_completo && (
           <div className="form-group">
@@ -103,10 +105,10 @@ export default function Funcionarios() {
   const admins = funcionarios.filter(f => f.role === 'admin').length;
 
   return (
-    <Layout title="Funcionários" subtitle="Gerenciamento de colaboradores credenciados">
+    <Layout title="Usuários" subtitle="Gerenciamento de usuários credenciados">
       <div className="page-header">
         <div className="page-header-left">
-          <h2>{funcionarios.length} Funcionários cadastrados</h2>
+          <h2>{funcionarios.length} Usuários cadastrados</h2>
           <p>{ativos} ativos · {admins} administradores</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -119,10 +121,10 @@ export default function Funcionarios() {
           </select>
           <div className="search-wrapper">
             <Search size={14} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar funcionário..." />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar usuário..." />
           </div>
           <button className="btn btn-primary" onClick={() => { setEditing(null); setModal(true); }}>
-            <Plus size={16} /> Novo Funcionário
+            <Plus size={16} /> Novo Usuário
           </button>
         </div>
       </div>
@@ -130,18 +132,17 @@ export default function Funcionarios() {
       {filtered.length === 0 ? (
         <div className="empty-state">
           <Users size={40} color="var(--text-muted)" />
-          <h3>Nenhum funcionário encontrado</h3>
-          <p>Cadastre um novo funcionário ou ajuste os filtros.</p>
+          <h3>Nenhum usuário encontrado</h3>
+          <p>Cadastre um novo usuário ou ajuste os filtros.</p>
         </div>
       ) : (
         <div className="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>Funcionário</th>
+                <th>Usuário</th>
                 <th>CPF</th>
                 <th>Empresa</th>
-                <th>Cargo</th>
                 <th>Perfil</th>
                 <th>Status</th>
                 <th>Ações</th>
@@ -163,15 +164,14 @@ export default function Funcionarios() {
                         </div>
                       </div>
                     </td>
-                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{f.cpf}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtCpf(f.cpf)}</td>
                     <td>
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{emp?.nome ?? '—'}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{emp ? `${emp.andar}º andar · Sala ${emp.sala}` : ''}</div>
                     </td>
-                    <td style={{ fontSize: 13 }}>{f.cargo}</td>
                     <td>
                       <span className={`badge ${f.role === 'admin' ? 'badge-blue' : 'badge-neutral'}`}>
-                        {f.role === 'admin' ? <><ShieldCheck size={10} /> Admin</> : 'Funcionário'}
+                        {f.role === 'admin' ? <><ShieldCheck size={10} /> Admin</> : 'Usuário'}
                       </span>
                     </td>
                     <td>
@@ -211,7 +211,7 @@ export default function Funcionarios() {
               setModal(false);
               setEditing(null);
             } catch (e: any) {
-              alert(e?.response?.data?.error ?? 'Erro ao salvar funcionário');
+              alert(e?.response?.data?.error ?? 'Erro ao salvar usuário');
             }
           }}
           initial={editing ?? undefined}
@@ -222,8 +222,8 @@ export default function Funcionarios() {
       {confirm && (
         <div className="modal-overlay" onClick={() => setConfirm(null)}>
           <div className="modal" style={{ maxWidth: 360 }}>
-            <h3 className="modal-title" style={{ marginBottom: 12 }}>Remover funcionário</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>O funcionário será removido e perderá o acesso ao sistema.</p>
+            <h3 className="modal-title" style={{ marginBottom: 12 }}>Remover usuário</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>O usuário será removido e perderá o acesso ao sistema.</p>
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={() => setConfirm(null)}>Cancelar</button>
               <button className="btn btn-danger" onClick={() => { removeFuncionario(confirm); setConfirm(null); }}><Trash2 size={14} /> Remover</button>

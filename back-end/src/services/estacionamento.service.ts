@@ -255,6 +255,19 @@ export const getSessoes = async (user_id?: string) => {
 export const getPlano = async (user_id: string) =>
   (await sql`SELECT * FROM estacionamento_planos WHERE user_id = ${user_id}`)[0] ?? null;
 
+export const getTodosPlanos = async () =>
+  sql`
+    SELECT
+      p.*,
+      COALESCE(f.nome_completo, vis.nome_completo) AS nome_usuario,
+      COALESCE(f.email,         vis.email)          AS email_usuario,
+      CASE WHEN f.id IS NOT NULL THEN f.role::TEXT ELSE 'visitante' END AS role_usuario
+    FROM estacionamento_planos p
+    LEFT JOIN funcionarios f   ON f.id::TEXT   = p.user_id
+    LEFT JOIN visitantes   vis ON vis.id::TEXT = p.user_id
+    ORDER BY p.vencimento DESC
+  `;
+
 // Verifica se o plano está realmente ativo (status + vencimento)
 export const planoAtivo = (plano: any): boolean => {
   if (!plano || plano.status !== 'ativo') return false;

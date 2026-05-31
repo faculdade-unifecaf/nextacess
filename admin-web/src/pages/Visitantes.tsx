@@ -4,6 +4,25 @@ import { useAdmin } from '../context/AdminContext';
 import { Plus, UserPlus, X, Check, Trash2, Edit2, Search, CheckCircle, XCircle } from 'lucide-react';
 import type { Visitante, StatusVisitante } from '../data/mockData';
 
+const fmtCpf = (cpf: string) => {
+  const c = cpf.replace(/\D/g, '');
+  if (c.length !== 11) return cpf;
+  return `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6, 9)}-${c.slice(9)}`;
+};
+
+const fmtDate = (d?: string) => {
+  if (!d) return '—';
+  const clean = d.split('T')[0]!;
+  const [y, m, day] = clean.split('-');
+  return `${day}/${m}/${y}`;
+};
+
+const fmtTime = (t?: string | null) => {
+  if (!t) return null;
+  if (t.includes('T')) return new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  return t.slice(0, 5);
+};
+
 const statusCfg: Record<StatusVisitante, { cls: string; label: string }> = {
   Aguardando: { cls: 'badge-amber', label: 'Aguardando' },
   Aprovado: { cls: 'badge-green', label: 'Aprovado' },
@@ -64,7 +83,7 @@ function VisitanteModal({ onClose, onSave, initial, empresas, funcionarios }: {
           </select>
         </div>
         <div className="form-group">
-          <label>Funcionário responsável</label>
+          <label>Usuário responsável</label>
           <select value={form.funcionario_id} onChange={e => set('funcionario_id', e.target.value)}>
             <option value="">Sem responsável específico</option>
             {funcsEmpresa.map(f => <option key={f.id} value={f.id}>{f.nome_completo}</option>)}
@@ -178,7 +197,7 @@ export default function Visitantes() {
                   <tr key={v.id}>
                     <td>
                       <div style={{ fontWeight: 700, fontSize: 13 }}>{v.nome_completo}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{v.cpf}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtCpf(v.cpf)}</div>
                     </td>
                     <td>
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{emp?.nome ?? '—'}</div>
@@ -186,10 +205,10 @@ export default function Visitantes() {
                     </td>
                     <td style={{ fontSize: 13, color: 'var(--text-secondary)', maxWidth: 200 }}>{v.motivo}</td>
                     <td>
-                      <div style={{ fontSize: 13, fontWeight: 600 }}>{v.data_visita}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{fmtDate(v.data_visita)}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        {v.hora_entrada ? `Entrada: ${v.hora_entrada}` : `Previsto: ${v.hora_prevista}`}
-                        {v.hora_saida ? ` · Saída: ${v.hora_saida}` : ''}
+                        {v.hora_entrada ? `Entrada: ${fmtTime(v.hora_entrada)}` : `Previsto: ${fmtTime(v.hora_prevista)}`}
+                        {v.hora_saida ? ` · Saída: ${fmtTime(v.hora_saida)}` : ''}
                       </div>
                     </td>
                     <td><span className={`badge ${cfg.cls}`}>{cfg.label}</span></td>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AdminProvider } from './context/AdminContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { authService } from './services/authService';
 
 import Login from './pages/Login';
@@ -32,6 +33,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <AdminProvider>
         <Routes>
           <Route path="/login" element={
@@ -47,6 +49,7 @@ export default function App() {
           <Route path="*" element={<Navigate to={isAuth ? '/' : '/login'} replace />} />
         </Routes>
       </AdminProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

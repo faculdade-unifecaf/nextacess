@@ -259,6 +259,12 @@ export default function EstacionamentoScreen() {
     return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
   };
 
+  const aplicarMascaraPlaca = (texto: string) => {
+    const limpo = texto.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 7);
+    if (limpo.length <= 3) return limpo;
+    return `${limpo.slice(0, 3)}-${limpo.slice(3)}`;
+  };
+
   const addVeiculo = async () => {
     if (!novaPlaca.trim()) { Alert.alert('Informe a placa'); return; }
     try {
@@ -510,8 +516,10 @@ export default function EstacionamentoScreen() {
             <Text style={mo.title}>Adicionar Veículo</Text>
 
             <Text style={mo.label}>Placa *</Text>
-            <TextInput style={mo.input} value={novaPlaca} onChangeText={setNovaPlaca}
-              placeholder="ABC-1234" placeholderTextColor={C.muted} autoCapitalize="characters" />
+            <TextInput style={mo.input} value={novaPlaca}
+              onChangeText={t => setNovaPlaca(aplicarMascaraPlaca(t))}
+              placeholder="ABC-1234" placeholderTextColor={C.muted}
+              autoCapitalize="characters" maxLength={8} />
 
             <Text style={mo.label}>Modelo</Text>
             <TextInput style={mo.input} value={novoModelo} onChangeText={setNovoModelo}

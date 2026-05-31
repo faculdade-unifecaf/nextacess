@@ -8,10 +8,10 @@ import type { TipoAcesso, StatusAcesso, TipoPessoa } from '../data/mockData';
 // e às vezes o valor capitalizado — cobrimos os dois formatos
 const tipoPessoaCfg: Record<string, { cls: string; label: string }> = {
   admin:          { cls: 'badge-blue',    label: 'Administrador' },
-  funcionario:    { cls: 'badge-neutral', label: 'Funcionário'   },
+  funcionario:    { cls: 'badge-neutral', label: 'Usuário'       },
   visitante:      { cls: 'badge-amber',   label: 'Visitante'     },
   Administrador:  { cls: 'badge-blue',    label: 'Administrador' },
-  'Funcionário':  { cls: 'badge-neutral', label: 'Funcionário'   },
+  'Funcionário':  { cls: 'badge-neutral', label: 'Usuário'       },
   Visitante:      { cls: 'badge-amber',   label: 'Visitante'     },
 };
 
@@ -70,36 +70,42 @@ export default function Acessos() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        <div className="search-wrapper" style={{ maxWidth: 280 }}>
-          <Search size={14} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar pessoa ou empresa..." />
+      <div className="page-header" style={{ marginBottom: 20 }}>
+        <div className="page-header-left">
+          <h2>{filtered.length} de {acessos.length} registros</h2>
+          <p>{totalHoje} acessos hoje · {autorizadosHoje} autorizados · {negadosHoje} negados</p>
         </div>
-        <input
-          type="date" value={filterData} onChange={e => setFilterData(e.target.value)}
-          style={{ padding: '8px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit' }}
-        />
-        <select
-          value={filterTipo} onChange={e => setFilterTipo(e.target.value as TipoAcesso | '')}
-          style={{ padding: '8px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit' }}
-        >
-          <option value="">Entrada e Saída</option>
-          <option value="Entrada">Entrada</option>
-          <option value="Saída">Saída</option>
-        </select>
-        <select
-          value={filterStatus} onChange={e => setFilterStatus(e.target.value as StatusAcesso | '')}
-          style={{ padding: '8px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit' }}
-        >
-          <option value="">Todos os status</option>
-          <option value="Autorizado">Autorizado</option>
-          <option value="Negado">Negado</option>
-        </select>
-        {(search || filterTipo || filterStatus || filterData) && (
-          <button className="btn btn-secondary btn-sm" onClick={() => { setSearch(''); setFilterTipo(''); setFilterStatus(''); setFilterData(''); }}>
-            Limpar filtros
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="search-wrapper" style={{ maxWidth: 200 }}>
+            <Search size={14} />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." />
+          </div>
+          <input
+            type="date" value={filterData} onChange={e => setFilterData(e.target.value)}
+            style={{ width: 138, padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit' }}
+          />
+          <select
+            value={filterTipo} onChange={e => setFilterTipo(e.target.value as TipoAcesso | '')}
+            style={{ width: 130, padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit' }}
+          >
+            <option value="">Entrada e Saída</option>
+            <option value="Entrada">Entrada</option>
+            <option value="Saída">Saída</option>
+          </select>
+          <select
+            value={filterStatus} onChange={e => setFilterStatus(e.target.value as StatusAcesso | '')}
+            style={{ width: 140, padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit' }}
+          >
+            <option value="">Todos os status</option>
+            <option value="Autorizado">Autorizado</option>
+            <option value="Negado">Negado</option>
+          </select>
+          {(search || filterTipo || filterStatus || filterData) && (
+            <button className="btn btn-secondary btn-sm" onClick={() => { setSearch(''); setFilterTipo(''); setFilterStatus(''); setFilterData(''); }}>
+              Limpar
+            </button>
+          )}
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -160,9 +166,6 @@ export default function Acessos() {
         </div>
       )}
 
-      <div style={{ marginTop: 16, fontSize: 12, color: 'var(--text-muted)', textAlign: 'right' }}>
-        {filtered.length} de {acessos.length} registros exibidos
-      </div>
     </Layout>
   );
 }

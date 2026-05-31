@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import { useAdmin } from '../context/AdminContext';
-import { Plus, Bell, X, Check, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Bell, X, Check, Trash2, Edit2, AlertTriangle, Info, Megaphone, Calendar, CalendarClock } from 'lucide-react';
 import type { Aviso, TipoAviso, PrioridadeAviso, PublicoAviso } from '../data/mockData';
 
-const tipoCfg: Record<TipoAviso, { cls: string; icon: string }> = {
-  Informativo: { cls: 'badge-blue', icon: 'ℹ️' },
-  Urgente: { cls: 'badge-red', icon: '🚨' },
-  Comunicado: { cls: 'badge-purple', icon: '📣' },
+const tipoCfg: Record<TipoAviso, { cls: string; color: string }> = {
+  Urgente:     { cls: 'badge-red',    color: '#ff3a3a' },
+  Informativo: { cls: 'badge-blue',   color: '#4c9eff' },
+  Comunicado:  { cls: 'badge-purple', color: '#a78bfa' },
 };
 
-const prioCfg: Record<PrioridadeAviso, { cls: string }> = {
-  Baixa: { cls: 'badge-green' }, Média: { cls: 'badge-amber' }, Alta: { cls: 'badge-red' },
-};
+function TipoIcon({ tipo, size = 20 }: { tipo: TipoAviso; size?: number }) {
+  if (tipo === 'Urgente')     return <AlertTriangle size={size} color="#ff3a3a" />;
+  if (tipo === 'Comunicado')  return <Megaphone     size={size} color="#a78bfa" />;
+  return                             <Info          size={size} color="#4c9eff" />;
+}
 
-const publicoCfg: Record<PublicoAviso, { cls: string }> = {
-  Funcionários: { cls: 'badge-blue' }, Visitantes: { cls: 'badge-amber' }, Todos: { cls: 'badge-green' },
+
+const fmtDate = (d?: string) => {
+  if (!d) return null;
+  const clean = d.split('T')[0]!;
+  const [y, m, day] = clean.split('-');
+  return `${day}/${m}/${y}`;
 };
 
 function AvisoModal({ onClose, onSave, initial }: {
@@ -55,17 +61,17 @@ function AvisoModal({ onClose, onSave, initial }: {
           <div className="form-group">
             <label>Tipo</label>
             <select value={form.tipo} onChange={e => set('tipo', e.target.value as TipoAviso)}>
-              <option value="Informativo">ℹ️ Informativo</option>
-              <option value="Urgente">🚨 Urgente</option>
-              <option value="Comunicado">📣 Comunicado</option>
+              <option value="Informativo">Informativo</option>
+              <option value="Urgente">Urgente</option>
+              <option value="Comunicado">Comunicado</option>
             </select>
           </div>
           <div className="form-group">
             <label>Prioridade</label>
             <select value={form.prioridade} onChange={e => set('prioridade', e.target.value as PrioridadeAviso)}>
-              <option value="Baixa">🟢 Baixa</option>
-              <option value="Média">🟡 Média</option>
-              <option value="Alta">🔴 Alta</option>
+              <option value="Baixa">Baixa</option>
+              <option value="Média">Média</option>
+              <option value="Alta">Alta</option>
             </select>
           </div>
         </div>
@@ -73,19 +79,13 @@ function AvisoModal({ onClose, onSave, initial }: {
           <label>Público-alvo</label>
           <select value={form.publico} onChange={e => set('publico', e.target.value as PublicoAviso)}>
             <option value="Todos">Todos</option>
-            <option value="Funcionários">Funcionários</option>
+            <option value="Funcionários">Usuários</option>
             <option value="Visitantes">Visitantes</option>
           </select>
         </div>
         <div className="form-row">
           <div className="form-group"><label>Início da exibição</label><input type="date" value={form.data_inicio} onChange={e => set('data_inicio', e.target.value)} /></div>
           <div className="form-group"><label>Expiração</label><input type="date" value={form.data_expiracao} onChange={e => set('data_expiracao', e.target.value)} /></div>
-        </div>
-        <div className="form-group">
-          <label>Status</label>
-          <select value={form.ativo ? 'ativo' : 'inativo'} onChange={e => set('ativo', e.target.value === 'ativo')}>
-            <option value="ativo">Ativo</option><option value="inativo">Inativo</option>
-          </select>
         </div>
         <div className="modal-actions">
           <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
@@ -128,40 +128,65 @@ export default function Avisos() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {avisos.map(a => {
           const tc = tipoCfg[a.tipo];
-          const pc = prioCfg[a.prioridade];
-          const pub = publicoCfg[a.publico];
           const expired = a.data_expiracao && new Date(a.data_expiracao) < new Date();
+          const criado = (a as any).created_at ?? a.data_criacao;
+
           return (
-            <div key={a.id} className="card" style={{
-              padding: '18px 22px',
-              opacity: !a.ativo ? 0.6 : 1
-            }}>
+            <div key={a.id} className="card" style={{ padding: '18px 22px', opacity: !a.ativo ? 0.55 : 1 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                <div style={{ fontSize: 22, marginTop: 2 }}>{tc.icon}</div>
+
+                {/* Ícone do tipo */}
+                <div style={{
+                  width: 40, height: 40, borderRadius: 12, flexShrink: 0, marginTop: 2,
+                  background: tc.color + '18',
+                  border: `1px solid ${tc.color}30`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <TipoIcon tipo={a.tipo} size={18} />
+                </div>
+
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 800, fontSize: 15 }}>{a.titulo}</span>
                     <span className={`badge ${tc.cls}`}>{a.tipo}</span>
-                    <span className={`badge ${pc.cls}`}>{a.prioridade}</span>
-                    <span className={`badge ${pub.cls}`}>{a.publico}</span>
-                    {!a.ativo && <span className="badge badge-amber">Inativo</span>}
                     {expired && <span className="badge badge-red">Expirado</span>}
+                    {!a.ativo && <span className="badge badge-neutral">Inativo</span>}
                   </div>
-                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 10 }}>{a.mensagem}</p>
-                  <div style={{ display: 'flex', gap: 16, fontSize: 11, color: 'var(--text-muted)' }}>
-                    <span>📅 Criado: <strong style={{ color: 'var(--text-secondary)' }}>{a.data_criacao}</strong></span>
-                    <span>▶ Início: <strong style={{ color: 'var(--text-secondary)' }}>{a.data_inicio}</strong></span>
-                    {a.data_expiracao && <span>⏹ Expira: <strong style={{ color: expired ? 'var(--red)' : 'var(--text-secondary)' }}>{a.data_expiracao}</strong></span>}
+
+                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 10 }}>
+                    {a.mensagem}
+                  </p>
+
+                  <div style={{ display: 'flex', gap: 16, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Calendar size={11} />
+                      Criado: <strong style={{ color: 'var(--text-secondary)' }}>{fmtDate(criado) ?? '—'}</strong>
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Calendar size={11} />
+                      Início: <strong style={{ color: 'var(--text-secondary)' }}>{fmtDate(a.data_inicio) ?? '—'}</strong>
+                    </span>
+                    {a.data_expiracao && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <CalendarClock size={11} color={expired ? 'var(--red)' : undefined} />
+                        Expira: <strong style={{ color: expired ? 'var(--red)' : 'var(--text-secondary)' }}>{fmtDate(a.data_expiracao)}</strong>
+                      </span>
+                    )}
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+                      <strong style={{ color: 'var(--text-muted)' }}>{a.publico}</strong>
+                      <span style={{ opacity: 0.4 }}>·</span>
+                      <strong style={{ color: 'var(--text-muted)' }}>Prioridade {a.prioridade}</strong>
+                    </span>
                   </div>
                 </div>
+
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => { setEditing(a); setModal(true); }}><Edit2 size={14} /></button>
-                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => updateAviso(a.id, { ativo: !a.ativo })} title={a.ativo ? 'Desativar' : 'Ativar'}>
-                    {a.ativo
-                      ? <span style={{ fontSize: 11, color: 'var(--amber)', fontWeight: 700 }}>OFF</span>
-                      : <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 700 }}>ON</span>}
+                  <button className="btn btn-ghost btn-icon btn-sm" title="Editar" onClick={() => { setEditing(a); setModal(true); }}>
+                    <Edit2 size={14} />
                   </button>
-                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setConfirm(a.id)}><Trash2 size={14} color="var(--red)" /></button>
+                  <button className="btn btn-ghost btn-icon btn-sm" title="Remover" onClick={() => setConfirm(a.id)}>
+                    <Trash2 size={14} color="var(--red)" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -184,7 +209,9 @@ export default function Avisos() {
             <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>O aviso será removido permanentemente.</p>
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={() => setConfirm(null)}>Cancelar</button>
-              <button className="btn btn-danger" onClick={() => { removeAviso(confirm); setConfirm(null); }}><Trash2 size={14} /> Remover</button>
+              <button className="btn btn-danger" onClick={() => { removeAviso(confirm); setConfirm(null); }}>
+                <Trash2 size={14} /> Remover
+              </button>
             </div>
           </div>
         </div>
