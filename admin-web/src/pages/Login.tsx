@@ -8,125 +8,15 @@ interface LoginProps {
   onLogin: () => void;
 }
 
-function LogoPanel() {
-  const [imgOk, setImgOk] = useState(true);
-
-  return (
-    <div style={{
-      flex: '0 0 55%',
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-      background: 'linear-gradient(145deg, #060608 0%, #0a0a12 50%, #0d0d18 100%)',
-      borderRight: '1px solid rgba(255,255,255,0.05)',
-    }}>
-      {/* Glow de fundo */}
-      <div style={{
-        position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
-        width: 520, height: 520,
-        background: 'radial-gradient(circle, rgba(76,158,255,0.09) 0%, transparent 65%)',
-        pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute', bottom: '10%', right: '5%',
-        width: 300, height: 300,
-        background: 'radial-gradient(circle, rgba(76,158,255,0.04) 0%, transparent 70%)',
-        pointerEvents: 'none',
-      }} />
-
-      {/* Linha decorativa topo */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-        background: 'linear-gradient(90deg, transparent 0%, #4c9eff 40%, #1e7ad1 60%, transparent 100%)',
-        opacity: 0.6,
-      }} />
-
-      <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 48px' }}>
-        {/* Logo — usa /img/logo.png; cai para ícone se não encontrar */}
-        <div style={{
-          width: 160, height: 160, margin: '0 auto 32px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          {imgOk ? (
-            <img
-              src="/img/logo.png"
-              alt="NextAccess Logo"
-              onError={() => setImgOk(false)}
-              style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 0 32px rgba(76,158,255,0.4))' }}
-            />
-          ) : (
-            <div style={{
-              width: 120, height: 120,
-              background: 'linear-gradient(135deg, #4c9eff, #1e7ad1)',
-              borderRadius: 32,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 60px rgba(76,158,255,0.35), 0 0 120px rgba(76,158,255,0.1)',
-            }}>
-              <Lock size={52} color="#fff" strokeWidth={1.5} />
-            </div>
-          )}
-        </div>
-
-        <h1 style={{
-          fontSize: 38, fontWeight: 900, letterSpacing: '-1px',
-          background: 'linear-gradient(135deg, #ffffff 30%, #a0c4ff 100%)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          marginBottom: 10,
-        }}>
-          NEXTACCESS
-        </h1>
-
-        <p style={{
-          fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500,
-          letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: 40,
-        }}>
-          Sistema de Controle de Acesso
-        </p>
-
-        {/* Badges de features */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-          {[
-            { dot: '#4c9eff', text: 'Reconhecimento facial inteligente' },
-            { dot: '#22d35e', text: 'Gestão de funcionários e visitantes' },
-            { dot: '#ffaa00', text: 'Controle de estacionamento integrado' },
-          ].map(({ dot, text }) => (
-            <div key={text} style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 16px',
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 100,
-            }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: dot, boxShadow: `0 0 8px ${dot}` }} />
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 500 }}>{text}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Rodapé do painel */}
-      <p style={{
-        position: 'absolute', bottom: 28,
-        fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.05em',
-      }}>
-        © 2025 NextAccess · Todos os direitos reservados
-      </p>
-    </div>
-  );
-}
-
 export default function Login({ onLogin }: LoginProps) {
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
   const { refreshAll } = useAdmin();
-  const [email, setEmail]     = useState('');
-  const [senha, setSenha]     = useState('');
+  const [email,    setEmail]    = useState('');
+  const [senha,    setSenha]    = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [erro, setErro]       = useState('');
+  const [loading,  setLoading]  = useState(false);
+  const [erro,     setErro]     = useState('');
+  const [imgOk,    setImgOk]    = useState(true);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,42 +40,155 @@ export default function Login({ onLogin }: LoginProps) {
   return (
     <>
       <style>{`
-        @keyframes spin    { to { transform: rotate(360deg); } }
-        @keyframes fadeIn  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        @media (max-width: 768px) {
-          .login-left  { display: none !important; }
-          .login-right { flex: 1 !important; }
+        @keyframes spin   { to { transform: rotate(360deg); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .login-wrap   { display: flex; min-height: 100vh; background: var(--bg-base); }
+        .login-left   {
+          flex: 0 0 58%; position: relative; overflow: hidden;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          background: linear-gradient(145deg, #060608 0%, #0a0a12 55%, #0d0d1a 100%);
+          border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        .login-right  {
+          flex: 0 0 42%;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          padding: 56px 48px;
+          background: var(--bg-surface);
+          animation: fadeUp 0.4s ease;
+        }
+        @media (max-width: 820px) {
+          .login-left  { display: none; }
+          .login-right { flex: 1; padding: 40px 28px; }
         }
       `}</style>
 
-      <div style={{ minHeight: '100vh', display: 'flex', background: 'var(--bg-base)' }}>
+      <div className="login-wrap">
 
-        {/* ── Painel esquerdo — logo ── */}
+        {/* ════════════ PAINEL ESQUERDO — LOGO ════════════ */}
         <div className="login-left">
-          <LogoPanel />
+
+          {/* Glows de fundo */}
+          <div style={{
+            position: 'absolute', top: '18%', left: '50%', transform: 'translateX(-50%)',
+            width: 560, height: 560,
+            background: 'radial-gradient(circle, rgba(76,158,255,0.1) 0%, transparent 65%)',
+            pointerEvents: 'none',
+          }} />
+          <div style={{
+            position: 'absolute', bottom: '8%', right: '0%',
+            width: 320, height: 320,
+            background: 'radial-gradient(circle, rgba(76,158,255,0.04) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          }} />
+
+          {/* Linha decorativa no topo */}
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+            background: 'linear-gradient(90deg, transparent 0%, #4c9eff 45%, #1e7ad1 55%, transparent 100%)',
+            opacity: 0.7,
+          }} />
+
+          {/* Conteúdo centralizado */}
+          <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 56px' }}>
+
+            {/* Logo */}
+            <div style={{
+              width: 172, height: 172, margin: '0 auto 36px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {imgOk ? (
+                <img
+                  src="/img/logo.png"
+                  alt="NextAccess"
+                  onError={() => setImgOk(false)}
+                  style={{
+                    width: '100%', height: '100%', objectFit: 'contain',
+                    filter: 'drop-shadow(0 0 36px rgba(76,158,255,0.45))',
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: 128, height: 128,
+                  background: 'linear-gradient(135deg, #4c9eff, #1e7ad1)',
+                  borderRadius: 36,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 0 64px rgba(76,158,255,0.35), 0 0 130px rgba(76,158,255,0.1)',
+                }}>
+                  <Lock size={56} color="#fff" strokeWidth={1.5} />
+                </div>
+              )}
+            </div>
+
+            {/* Nome */}
+            <h1 style={{
+              fontSize: 42, fontWeight: 900, letterSpacing: '-1.5px', marginBottom: 10,
+              background: 'linear-gradient(135deg, #ffffff 30%, #a0c8ff 100%)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            }}>
+              NEXTACCESS
+            </h1>
+
+            <p style={{
+              fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500,
+              letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 44,
+            }}>
+              Sistema de Controle de Acesso
+            </p>
+
+            {/* Badges */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+              {[
+                { color: '#4c9eff', label: 'Reconhecimento facial inteligente' },
+                { color: '#22d35e', label: 'Gestão de funcionários e visitantes' },
+                { color: '#ffaa00', label: 'Controle de estacionamento integrado' },
+              ].map(({ color, label }) => (
+                <div key={label} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '8px 18px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: 100,
+                }}>
+                  <div style={{
+                    width: 7, height: 7, borderRadius: '50%',
+                    background: color, boxShadow: `0 0 8px ${color}`,
+                    flexShrink: 0,
+                  }} />
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 500 }}>
+                    {label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Rodapé */}
+          <p style={{
+            position: 'absolute', bottom: 24, fontSize: 11,
+            color: 'var(--text-muted)', letterSpacing: '0.04em',
+          }}>
+            © 2025 NextAccess · Todos os direitos reservados
+          </p>
         </div>
 
-        {/* ── Painel direito — formulário ── */}
-        <div className="login-right" style={{
-          flex: '0 0 45%',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          padding: '48px 40px',
-          background: 'var(--bg-surface)',
-          animation: 'fadeIn 0.4s ease',
-        }}>
-          <div style={{ width: '100%', maxWidth: 380 }}>
+        {/* ════════════ PAINEL DIREITO — FORMULÁRIO ════════════ */}
+        <div className="login-right">
+          <div style={{ width: '100%', maxWidth: 360 }}>
 
-            {/* Cabeçalho do formulário */}
+            {/* Cabeçalho */}
             <div style={{ marginBottom: 36 }}>
-              <p style={{
-                fontSize: 11, fontWeight: 700, letterSpacing: '0.15em',
-                textTransform: 'uppercase', color: 'var(--blue)',
-                marginBottom: 8,
+              <span style={{
+                display: 'inline-block', fontSize: 11, fontWeight: 700,
+                letterSpacing: '0.15em', textTransform: 'uppercase',
+                color: 'var(--blue)', marginBottom: 10,
+                padding: '4px 12px',
+                background: 'rgba(76,158,255,0.1)',
+                border: '1px solid rgba(76,158,255,0.2)',
+                borderRadius: 100,
               }}>
                 Área Restrita
-              </p>
-              <h2 style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.5px', marginBottom: 6 }}>
+              </span>
+              <h2 style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.5px', marginBottom: 6, marginTop: 14 }}>
                 Entrar na conta
               </h2>
               <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
@@ -193,7 +196,7 @@ export default function Login({ onLogin }: LoginProps) {
               </p>
             </div>
 
-            {/* Formulário */}
+            {/* Form */}
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>E-mail</label>
@@ -241,7 +244,7 @@ export default function Login({ onLogin }: LoginProps) {
 
               <button
                 type="submit" className="btn btn-primary"
-                style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: 14, marginTop: 4, gap: 8 }}
+                style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: 14, marginTop: 8, gap: 8 }}
                 disabled={loading}
               >
                 {loading ? (
@@ -262,13 +265,14 @@ export default function Login({ onLogin }: LoginProps) {
 
             <p style={{
               textAlign: 'center', fontSize: 11, color: 'var(--text-muted)',
-              marginTop: 28, lineHeight: 1.6,
+              marginTop: 28, lineHeight: 1.7,
             }}>
               🔒 Acesso autorizado somente para recepcionistas.<br />
               Em caso de problemas, contate o administrador.
             </p>
           </div>
         </div>
+
       </div>
     </>
   );
