@@ -49,7 +49,7 @@ export default function VisitanteCadastro() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.nome_completo || !form.cpf || !form.email || !form.empresa_id || !form.motivo || !form.data_visita) return;
+    if (!form.nome_completo || !form.cpf || !form.email || !form.empresa_id || !form.motivo || !form.data_visita || !form.hora_prevista) return;
     setStep('loading');
     try {
       const res = await fetch(`${API}/publico/cadastro`, {
@@ -250,10 +250,10 @@ export default function VisitanteCadastro() {
                     </div>
                   </div>
                   <div>
-                    <label className="vc-label">Horário previsto</label>
+                    <label className="vc-label">Horário previsto *</label>
                     <div className="vc-input-wrap">
                       <Clock size={15} />
-                      <input className="vc-input" type="time" value={form.hora_prevista} onChange={e => set('hora_prevista', e.target.value)} />
+                      <input className="vc-input" type="time" value={form.hora_prevista} onChange={e => set('hora_prevista', e.target.value)} required />
                     </div>
                   </div>
                 </div>
@@ -263,11 +263,11 @@ export default function VisitanteCadastro() {
                   border: '1px solid rgba(76,158,255,0.15)', borderRadius: 10,
                   fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6,
                 }}>
-                  Após o envio, você receberá um e-mail com seu QR Code pessoal e temporário (válido 48h). Apresente-o na recepção para registrar sua entrada e saída.
+                  Após a empresa aprovar seu acesso, você receberá um e-mail com seu QR Code pessoal. Apresente-o na recepção para registrar sua entrada e saída. Verifique também a pasta de spam.
                 </div>
 
                 <button className="vc-btn" type="submit">
-                  Cadastrar e receber QR Code <ArrowRight size={16} />
+                  Enviar solicitação de acesso <ArrowRight size={16} />
                 </button>
               </form>
             )}

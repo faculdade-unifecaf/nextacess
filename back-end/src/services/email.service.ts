@@ -25,19 +25,30 @@ const fmtDate = (d: string) => {
   return `${day}/${m}/${y}`;
 };
 
-export const sendVisitanteQR = (p: VisitanteQRPayload) =>
-  transporter.sendMail({
-    from:    `"NextAccess" <${process.env.GMAIL_USER}>`,
-    to:      p.to,
-    subject: `[NextAccess] Seu QR Code de acesso — ${p.empresa}`,
-    text:    buildText(p),
-    html:    buildHtml(p),
+export const sendVisitanteQR = (p: VisitanteQRPayload) => {
+  const msgId = `<${Date.now()}.${Math.random().toString(36).slice(2)}@nextaccess>`;
+  return transporter.sendMail({
+    from:      `"NextAccess" <${process.env.GMAIL_USER}>`,
+    to:        p.to,
+    replyTo:   process.env.GMAIL_USER,
+    subject:   `Seu acesso foi aprovado — ${p.empresa}`,
+    messageId: msgId,
+    headers: {
+      'X-Priority':       '3',
+      'X-Mailer':         'NextAccess Mailer',
+      'List-Unsubscribe': `<mailto:${process.env.GMAIL_USER}?subject=unsubscribe>`,
+    },
+    text: buildText(p),
+    html: buildHtml(p),
     attachments: [{
-      filename: 'qrcode.png',
-      content:  p.qrBuffer,
-      cid:      'qrcode@nextaccess',
+      filename:           'qrcode.png',
+      content:            p.qrBuffer,
+      contentType:        'image/png',
+      contentDisposition: 'inline',
+      cid:                'qrcode@nextaccess',
     }],
   });
+};
 
 function buildText(p: VisitanteQRPayload): string {
   const data = fmtDate(p.data_visita);
