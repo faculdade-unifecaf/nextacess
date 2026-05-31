@@ -17,7 +17,6 @@ export interface VisitanteQRPayload {
   data_visita: string;
   hora_prevista?: string | undefined;
   qr_token: string;
-  qrBuffer: Buffer;
 }
 
 const fmtDate = (d: string) => {
@@ -26,7 +25,10 @@ const fmtDate = (d: string) => {
 };
 
 export const sendVisitanteQR = (p: VisitanteQRPayload) => {
-  const msgId = `<${Date.now()}.${Math.random().toString(36).slice(2)}@nextaccess>`;
+  const msgId    = `<${Date.now()}.${Math.random().toString(36).slice(2)}@nextaccess>`;
+  const base     = (process.env.BACKEND_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const qrImgUrl = `${base}/api/publico/qr-image/${encodeURIComponent(p.qr_token)}`;
+
   return transporter.sendMail({
     from:      `"NextAccess" <${process.env.GMAIL_USER}>`,
     to:        p.to,
@@ -39,14 +41,7 @@ export const sendVisitanteQR = (p: VisitanteQRPayload) => {
       'List-Unsubscribe': `<mailto:${process.env.GMAIL_USER}?subject=unsubscribe>`,
     },
     text: buildText(p),
-    html: buildHtml(p),
-    attachments: [{
-      filename:           'qrcode.png',
-      content:            p.qrBuffer,
-      contentType:        'image/png',
-      contentDisposition: 'inline',
-      cid:                'qrcode@nextaccess',
-    }],
+    html: buildHtml(p, qrImgUrl),
   });
 };
 
@@ -70,7 +65,7 @@ function buildText(p: VisitanteQRPayload): string {
   ].filter(Boolean).join('\n');
 }
 
-function buildHtml(p: VisitanteQRPayload): string {
+function buildHtml(p: VisitanteQRPayload, qrImgUrl: string): string {
   const data = fmtDate(p.data_visita);
   const horario = p.hora_prevista
     ? `<tr>
@@ -142,7 +137,7 @@ function buildHtml(p: VisitanteQRPayload): string {
         <p style="margin:0 0 4px;font-size:9px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;color:#4c9eff">QR Code de Acesso</p>
         <p style="margin:0 0 20px;font-size:11px;color:rgba(255,255,255,0.35)">Apresente na catraca de entrada</p>
         <div style="display:inline-block;background:#ffffff;border-radius:14px;padding:10px;line-height:0">
-          <img src="cid:qrcode@nextaccess" width="220" height="220" alt="QR Code de acesso NextAccess" style="display:block;border-radius:6px">
+          <img src="${qrImgUrl}" width="220" height="220" alt="QR Code de acesso NextAccess" style="display:block;border-radius:6px">
         </div>
         <p style="margin:16px 0 0;font-size:12px;color:rgba(255,255,255,0.3);font-family:'Courier New',Courier,monospace;letter-spacing:.18em">${p.qr_token.slice(0, 8).toUpperCase()}</p>
       </td></tr>

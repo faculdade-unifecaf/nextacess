@@ -1,4 +1,3 @@
-import QRCode from 'qrcode';
 import sql from '../config/database';
 import * as push from './push.service';
 import { sendVisitanteQR } from './email.service';
@@ -73,11 +72,6 @@ export const aprovar = async (id: string, autorizado_por: string) => {
       SELECT nome, andar, sala FROM empresas WHERE id = ${visitante.empresa_id}
     `)[0] as any;
 
-    const qrBuffer = await QRCode.toBuffer(visitante.qr_token, {
-      width: 300, margin: 2,
-      color: { dark: '#0a0a12', light: '#ffffff' },
-    });
-
     sendVisitanteQR({
       to:            visitante.email,
       nome:          visitante.nome_completo,
@@ -87,7 +81,6 @@ export const aprovar = async (id: string, autorizado_por: string) => {
       data_visita:   visitante.data_visita?.toISOString?.().slice(0, 10) ?? visitante.data_visita,
       hora_prevista: visitante.hora_prevista ?? undefined,
       qr_token:      visitante.qr_token,
-      qrBuffer,
     }).catch(err => console.error('[email] QR Code visitante:', err));
   }
 
