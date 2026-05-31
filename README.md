@@ -13,8 +13,14 @@ cd back-end && npm run dev          # http://localhost:3000
 # Admin-web (React)
 cd admin-web && npm run dev         # http://localhost:5173
 
-# App mobile
-cd academia && npx expo start
+# App mobile — Expo Go (iOS e Android na mesma rede)
+cd academia && npm run lan          # usa IP da rede → exp://192.168.0.104:8081
+
+# App mobile — via browser Android (sem Expo Go)
+cd academia && npm run web:lan      # abre em http://192.168.0.104:8081
+
+# App mobile — tunnel (se LAN não funcionar)
+cd academia && npm run tunnel
 
 # IoT — câmera QR Code
 cd iot && make qr
@@ -98,6 +104,28 @@ http://localhost:3000/api
 - Câmera de leitura de QR Code (`make qr`)
 - Reconhecimento facial (`make facial`)
 - Validação em tempo real via API
+
+---
+
+## Cartões de teste — Stripe
+
+Use estes cartões no módulo de estacionamento (ambiente de teste):
+
+| Número | Bandeira | Resultado |
+|---|---|---|
+| `4242 4242 4242 4242` | Visa | Pagamento aprovado |
+| `5555 5555 5555 4444` | Mastercard | Pagamento aprovado |
+| `4000 0025 6000 0002` | Visa | Sempre recusado |
+| `4000 0000 0000 9995` | Visa | Recusado — saldo insuficiente |
+| `4000 0000 0000 3220` | Visa | Requer autenticação 3D Secure |
+
+**Dados de preenchimento (qualquer combinação):**
+- **Validade:** qualquer data futura — ex: `12/29`
+- **CVC:** qualquer 3 dígitos — ex: `123`
+- **CEP:** qualquer 5 dígitos — ex: `12345`
+
+> Estes cartões funcionam apenas com a chave `sk_test_...` no `.env`.
+> Nenhuma cobrança real é efetuada.
 
 ---
 

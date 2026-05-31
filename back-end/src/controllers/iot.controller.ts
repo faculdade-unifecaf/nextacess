@@ -5,9 +5,55 @@ import * as acessosSvc from '../services/acessos.service';
 // Guarda o último resultado por userId (TTL de 10s)
 const recentAccess = new Map<string, { result: object; at: number }>();
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const validarQR = async (req: Request, res: Response) => {
   const { token } = req.body;
-  if (!token || !token.startsWith('NEXTACCESS:')) {
+  if (!token) {
+    res.status(400).json({ autorizado: false, motivo: 'Token inválido' }); return;
+  }
+
+  // ── Visitante público (formulário /cadastro) — qr_token é um UUID puro ──
+  if (UUID_RE.test(token)) {
+    const rows = await sql`
+      SELECT v.*, e.nome AS empresa_nome, e.andar
+      FROM visitantes v
+      LEFT JOIN empresas e ON e.id = v.empresa_id
+      WHERE v.qr_token = ${token}
+    `;
+    if (!rows[0]) {
+      res.status(401).json({ autorizado: false, motivo: 'QR Code não encontrado' }); return;
+    }
+    const v = rows[0] as any;
+
+    if (v.qr_expires_at && new Date(v.qr_expires_at) < new Date()) {
+      res.status(401).json({ autorizado: false, motivo: 'QR Code expirado' }); return;
+    }
+    if (v.status !== 'Aprovado' && v.status !== 'Em visita') {
+      res.status(401).json({ autorizado: false, motivo: `Acesso não autorizado — status: ${v.status}` }); return;
+    }
+
+    const isEntrada = v.status === 'Aprovado';
+    const tipo      = isEntrada ? 'Entrada' : 'Saída';
+
+    await acessosSvc.create({
+      pessoa_nome: v.nome_completo, pessoa_tipo: 'visitante',
+      empresa: v.empresa_nome ?? null, andar: v.andar ?? null,
+      tipo, status: 'Autorizado', local: 'Catraca Principal',
+    });
+
+    if (isEntrada) {
+      await sql`UPDATE visitantes SET status='Em visita', hora_entrada=NOW() WHERE id=${v.id}`;
+    } else {
+      await sql`UPDATE visitantes SET status='Saiu', hora_saida=NOW() WHERE id=${v.id}`;
+    }
+
+    res.json({ autorizado: true, nome: v.nome_completo, tipo: 'visitante', empresa: v.empresa_nome ?? null });
+    return;
+  }
+
+  // ── Funcionário / visitante interno — token NEXTACCESS:userId:slot ──
+  if (!token.startsWith('NEXTACCESS:')) {
     res.status(400).json({ autorizado: false, motivo: 'Token inválido' }); return;
   }
 
@@ -37,7 +83,7 @@ export const validarQR = async (req: Request, res: Response) => {
     res.json(result); return;
   }
 
-  // Verifica visitantes
+  // Verifica visitantes internos (cadastrados pela recepção)
   const visits = await sql`SELECT id, nome_completo, status, empresa_id FROM visitantes WHERE id=${userId}`;
   if (visits[0]) {
     const v = visits[0] as any;
@@ -54,7 +100,7 @@ export const validarQR = async (req: Request, res: Response) => {
       empresa: emp?.nome ?? null, andar: emp?.andar ?? null,
       tipo: 'Entrada', status: 'Autorizado', local: 'Catraca Principal',
     });
-    await sql`UPDATE visitantes SET status='Em visita' WHERE id=${v.id}`;
+    await sql`UPDATE visitantes SET status='Em visita', hora_entrada=NOW() WHERE id=${v.id}`;
     const result = { autorizado: true, nome: v.nome_completo, tipo: 'visitante', empresa: emp?.nome ?? null };
     recentAccess.set(userId, { result, at: Date.now() });
     res.json(result); return;
