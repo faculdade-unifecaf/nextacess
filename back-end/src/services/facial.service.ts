@@ -9,7 +9,7 @@ const supabase = createClient(
 const BUCKET = 'facial-fotos';
 
 async function uploadFoto(user_id: string, sufixo: 'normal' | 'proxima', b64: string): Promise<string> {
-  const base64Data = b64.includes(',') ? b64.split(',')[1] : b64;
+  const base64Data = (b64.includes(',') ? b64.split(',')[1] : b64) ?? b64;
   const buf  = Buffer.from(base64Data, 'base64');
   const path = `${user_id}_${sufixo}.jpg`;
 

@@ -1,17 +1,19 @@
 {
   "expo": {
-    "name": "academia",
-    "slug": "academia",
+    "name": "NextAccess",
+    "slug": "nextaccess",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "academia",
+    "scheme": "nextaccess",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nextaccess.app"
     },
     "android": {
+      "package": "com.nextaccess.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

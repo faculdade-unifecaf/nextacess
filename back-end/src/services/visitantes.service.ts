@@ -1,4 +1,3 @@
-import QRCode from 'qrcode';
 import sql from '../config/database';
 import * as push from './push.service';
 import { sendVisitanteQR } from './email.service';
@@ -13,7 +12,24 @@ export const findAll = () =>
 export const findById = async (id: string) =>
   (await sql`SELECT * FROM visitantes WHERE id=${id}`)[0] ?? null;
 
+const checkCpfUnico = async (cpf: string, excludeId?: string) => {
+  const digits = (cpf ?? '').replace(/\D/g, '');
+  if (!digits) return;
+  const [existV] = await sql`
+    SELECT id FROM visitantes
+    WHERE REGEXP_REPLACE(cpf, '[^0-9]', '', 'g') = ${digits}
+    ${excludeId ? sql`AND id <> ${excludeId}` : sql``}
+  `;
+  if (existV) throw Object.assign(new Error('CPF já cadastrado no sistema.'), { code: 'CPF_DUPLICADO' });
+  const [existF] = await sql`
+    SELECT id FROM funcionarios
+    WHERE REGEXP_REPLACE(cpf, '[^0-9]', '', 'g') = ${digits}
+  `;
+  if (existF) throw Object.assign(new Error('CPF já cadastrado no sistema.'), { code: 'CPF_DUPLICADO' });
+};
+
 export const create = async (d: any) => {
+  await checkCpfUnico(d.cpf ?? '');
   const visitante = (await sql`
     INSERT INTO visitantes (nome_completo, cpf, email, empresa_id, funcionario_id, motivo,
                              data_visita, hora_prevista, status)
@@ -36,6 +52,7 @@ export const create = async (d: any) => {
 export const update = async (id: string, d: any) =>
   (await sql`
     UPDATE visitantes SET nome_completo=${d.nome_completo}, cpf=${d.cpf ?? null},
+      email=${d.email ?? null}, telefone=${d.telefone ?? null},
       empresa_id=${d.empresa_id ?? null}, funcionario_id=${d.funcionario_id ?? null},
       motivo=${d.motivo ?? null}, data_visita=${d.data_visita}, hora_prevista=${d.hora_prevista},
       status=${d.status}
@@ -56,11 +73,6 @@ export const aprovar = async (id: string, autorizado_por: string) => {
       SELECT nome, andar, sala FROM empresas WHERE id = ${visitante.empresa_id}
     `)[0] as any;
 
-    const qrBuffer = await QRCode.toBuffer(visitante.qr_token, {
-      width: 300, margin: 2,
-      color: { dark: '#0a0a12', light: '#ffffff' },
-    });
-
     sendVisitanteQR({
       to:            visitante.email,
       nome:          visitante.nome_completo,
@@ -70,11 +82,53 @@ export const aprovar = async (id: string, autorizado_por: string) => {
       data_visita:   visitante.data_visita?.toISOString?.().slice(0, 10) ?? visitante.data_visita,
       hora_prevista: visitante.hora_prevista ?? undefined,
       qr_token:      visitante.qr_token,
-      qrBuffer,
     }).catch(err => console.error('[email] QR Code visitante:', err));
   }
 
   return visitante;
+};
+
+export const solicitar = async (visitanteId: string, d: any) => {
+  const [origem] = await sql`SELECT cpf, nome_completo, email FROM visitantes WHERE id=${visitanteId}` as any[];
+  if (!origem) throw new Error('Visitante não encontrado');
+
+  const cpfDigits = (origem.cpf ?? '').replace(/\D/g, '');
+  const [ativo] = await sql`
+    SELECT id FROM visitantes
+    WHERE REGEXP_REPLACE(cpf, '[^0-9]', '', 'g') = ${cpfDigits}
+      AND status IN ('Aguardando','Aprovado','Em visita')
+  ` as any[];
+  if (ativo) throw Object.assign(new Error('Você já possui uma solicitação ativa.'), { code: 'JA_ATIVO' });
+
+  const [novo] = await sql`
+    INSERT INTO visitantes (nome_completo, cpf, email, empresa_id, motivo, data_visita, hora_prevista, status)
+    VALUES (${origem.nome_completo}, ${origem.cpf}, ${origem.email},
+            ${d.empresa_id}, ${d.motivo}, ${d.data_visita}, ${d.hora_prevista}, 'Aguardando')
+    RETURNING *
+  ` as any[];
+
+  push.sendToRoles(['admin'], {
+    title: 'Nova solicitação de acesso',
+    body: `${origem.nome_completo} solicita acesso via aplicativo.`,
+    data: { type: 'visitante', id: novo.id },
+  }).catch(() => {});
+
+  return novo;
+};
+
+export const meuStatus = async (visitanteId: string) => {
+  const [origem] = await sql`SELECT cpf FROM visitantes WHERE id=${visitanteId}` as any[];
+  if (!origem) return null;
+  const cpfDigits = (origem.cpf ?? '').replace(/\D/g, '');
+  const [ativo] = await sql`
+    SELECT id, status, qr_token, empresa_id,
+           (SELECT nome FROM empresas WHERE id = v.empresa_id) as empresa_nome
+    FROM visitantes v
+    WHERE REGEXP_REPLACE(cpf, '[^0-9]', '', 'g') = ${cpfDigits}
+      AND status IN ('Aguardando','Aprovado','Em visita')
+    ORDER BY created_at DESC LIMIT 1
+  ` as any[];
+  return ativo ?? null;
 };
 
 export const negar = async (id: string) =>

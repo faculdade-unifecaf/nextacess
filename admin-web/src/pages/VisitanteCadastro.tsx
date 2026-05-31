@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, User, Mail, Phone, Building2, FileText, Calendar, Clock, AlertCircle, ArrowRight } from 'lucide-react';
 
-const API = import.meta.env.VITE_API_URL ?? 'http://192.168.0.104:3000/api';
+const API = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '') + '/api';
 
 interface Empresa { id: string; nome: string; andar: number; sala: string }
 
@@ -49,7 +49,7 @@ export default function VisitanteCadastro() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.nome_completo || !form.cpf || !form.email || !form.empresa_id || !form.motivo || !form.data_visita) return;
+    if (!form.nome_completo || !form.cpf || !form.email || !form.empresa_id || !form.motivo || !form.data_visita || !form.hora_prevista) return;
     setStep('loading');
     try {
       const res = await fetch(`${API}/publico/cadastro`, {
@@ -58,6 +58,7 @@ export default function VisitanteCadastro() {
         body: JSON.stringify(form),
       });
       const data = await res.json();
+      if (res.status === 409) throw new Error('Este CPF já possui um cadastro no sistema. Caso precise de acesso, entre em contato com a recepção.');
       if (!res.ok) throw new Error(data.error ?? 'Erro ao cadastrar.');
       setStep('success');
     } catch (err: any) {
@@ -106,9 +107,11 @@ export default function VisitanteCadastro() {
             <h1 style={{ fontSize: 22, fontWeight: 800, color: '#fff', margin: '0 0 8px' }}>
               Cadastro de Visitante
             </h1>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.6 }}>
-              Preencha o formulário abaixo. Você receberá um QR Code no seu e-mail para registrar entrada e saída.
-            </p>
+            {step === 'form' && (
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.6 }}>
+                Preencha o formulário abaixo. Você receberá um QR Code no seu e-mail para registrar entrada e saída.
+              </p>
+            )}
           </div>
 
           <div className="vc-body">
@@ -173,7 +176,7 @@ export default function VisitanteCadastro() {
                   animation: 'spin .8s linear infinite', margin: '0 auto 16px',
                 }} />
                 <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-                  Enviando QR Code para seu e-mail…
+                  Registrando seu cadastro…
                 </p>
               </div>
             )}
@@ -247,10 +250,10 @@ export default function VisitanteCadastro() {
                     </div>
                   </div>
                   <div>
-                    <label className="vc-label">Horário previsto</label>
+                    <label className="vc-label">Horário previsto *</label>
                     <div className="vc-input-wrap">
                       <Clock size={15} />
-                      <input className="vc-input" type="time" value={form.hora_prevista} onChange={e => set('hora_prevista', e.target.value)} />
+                      <input className="vc-input" type="time" value={form.hora_prevista} onChange={e => set('hora_prevista', e.target.value)} required />
                     </div>
                   </div>
                 </div>
@@ -260,11 +263,11 @@ export default function VisitanteCadastro() {
                   border: '1px solid rgba(76,158,255,0.15)', borderRadius: 10,
                   fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6,
                 }}>
-                  Após o envio, você receberá um e-mail com seu QR Code pessoal e temporário (válido 48h). Apresente-o na recepção para registrar sua entrada e saída.
+                  Após a empresa aprovar seu acesso, você receberá um e-mail com seu QR Code pessoal. Apresente-o na recepção para registrar sua entrada e saída. Verifique também a pasta de spam.
                 </div>
 
                 <button className="vc-btn" type="submit">
-                  Cadastrar e receber QR Code <ArrowRight size={16} />
+                  Enviar solicitação de acesso <ArrowRight size={16} />
                 </button>
               </form>
             )}

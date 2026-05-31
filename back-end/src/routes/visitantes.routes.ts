@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import * as c from '../controllers/visitantes.controller';
 const r = Router();
+r.get('/meu-status',        c.meuStatus);
+r.post('/solicitar',        c.solicitar);
 r.get('/',                  c.list);
 r.get('/:id',               c.get);
 r.post('/',                 c.create);

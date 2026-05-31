@@ -8,7 +8,7 @@ import sys
 import threading
 from pyzbar.pyzbar import decode as pyzbar_decode
 
-API_URL    = "http://localhost:3000/api/iot/validar"
+API_URL    = os.environ.get("NEXTACCESS_API_URL", "http://localhost:3000") + "/api/iot/validar"
 CAMERA_IDX = None
 
 GREEN = (0, 220, 80)

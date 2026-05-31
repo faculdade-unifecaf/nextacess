@@ -21,7 +21,11 @@ export const cadastrar = async (d: {
   data_visita: string;
   hora_prevista?: string;
 }) => {
-  await migrate();
+  // Verifica CPF duplicado (visitantes + funcionários)
+  const cpfDigits = (d.cpf ?? '').replace(/\D/g, '');
+  const [existV] = await sql`SELECT id FROM visitantes WHERE REGEXP_REPLACE(cpf, '[^0-9]', '', 'g') = ${cpfDigits}`;
+  const [existF] = await sql`SELECT id FROM funcionarios WHERE REGEXP_REPLACE(cpf, '[^0-9]', '', 'g') = ${cpfDigits}`;
+  if (existV || existF) throw Object.assign(new Error('CPF já cadastrado no sistema.'), { code: 'CPF_DUPLICADO' });
 
   const qr_token    = randomUUID();
   const qr_expires  = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
@@ -46,8 +50,6 @@ export const cadastrar = async (d: {
 };
 
 export const validarToken = async (token: string) => {
-  await migrate();
-
   const row = (await sql`
     SELECT v.*, e.nome AS empresa_nome, e.andar, e.sala
     FROM visitantes v

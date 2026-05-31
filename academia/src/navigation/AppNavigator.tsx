@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
 import { C } from '../../constants/theme';
 
+import OnboardingScreen      from '../screens/OnboardingScreen';
 import LoginScreen           from '../screens/LoginScreen';
 import AdminHomeScreen       from '../screens/admin/HomeScreen';
 import AdminVisitantesScreen from '../screens/admin/VisitantesScreen';
@@ -167,6 +168,7 @@ function VisitanteTabs() {
   return (
     <Tab.Navigator screenOptions={TAB_OPTS}>
       <Tab.Screen name="Acesso"         component={VisitanteHomeScreen}  options={{ tabBarIcon: ({ color }) => <QrCode        color={color} size={22} /> }} />
+      <Tab.Screen name="Avisos"         component={AvisosScreen}         options={{ tabBarIcon: ({ color }) => <Bell          color={color} size={22} /> }} />
       <Tab.Screen name="Estacionamento" component={EstacionamentoScreen} options={{ tabBarIcon: ({ color }) => <ParkingCircle color={color} size={22} />, tabBarLabel: 'Parking' }} />
       <Tab.Screen name="Perfil"         component={PerfilScreen}         options={{ tabBarIcon: ({ color }) => <User          color={color} size={22} /> }} />
     </Tab.Navigator>
@@ -188,7 +190,10 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
-          <Stack.Screen name="Login"         component={LoginScreen}    />
+          <>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen name="Login"      component={LoginScreen}      />
+          </>
         ) : user.role === 'admin' ? (
           <Stack.Screen name="AdminDrawer"   component={AdminDrawer}    />
         ) : user.role === 'funcionario' ? (

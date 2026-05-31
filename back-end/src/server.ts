@@ -1,26 +1,28 @@
 import 'dotenv/config';
-import app from "./app";
-import sql from "./config/database";
-import * as push           from "./services/push.service";
-import * as estacionamento from "./services/estacionamento.service";
+import app from './app';
+import sql from './config/database';
+import * as push           from './services/push.service';
+import * as estacionamento from './services/estacionamento.service';
+import { migrate as migrateVisitantePublico } from './services/visitante.publico.service';
 
-const PORT = 3000
+const PORT = Number(process.env.PORT) || 3000;
 
-async function testarConexao() {
-    try {
-        await sql`SELECT 1`;
-        console.log('✅ Conexão com o banco de dados estabelecida com sucesso!');
-        await push.ensureSchema();
-        console.log('✅ Tabela device_tokens pronta.');
-        await estacionamento.ensureSchema();
-        console.log('✅ Tabelas de estacionamento e facial prontas.');
-    } catch (error) {
-        console.error('❌ Erro ao conectar com o banco de dados:', error);
-    }
+async function bootstrap() {
+  try {
+    await sql`SELECT 1`;
+    console.log('✅ Banco conectado.');
+    await push.ensureSchema();
+    await estacionamento.ensureSchema();
+    await migrateVisitantePublico();
+    console.log('✅ Schemas prontos.');
+  } catch (error) {
+    console.error('❌ Erro na inicialização:', error);
+    process.exit(1);
+  }
 }
 
-testarConexao();
-
-app.listen(PORT, () => {
-    console.log(`Servidor iniciado na porta ${PORT} 🚀`);
+bootstrap().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor na porta ${PORT}`);
+  });
 });
