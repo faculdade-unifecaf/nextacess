@@ -9,7 +9,7 @@ import { C } from '../../../constants/theme';
 
 const ROLE_LABEL: Record<string, { label: string; color: string; icon: any }> = {
   admin:       { label: 'Administrador', color: C.warning, icon: Shield    },
-  funcionario: { label: 'Funcionário',   color: C.blue,    icon: Briefcase },
+  funcionario: { label: 'Usuário',        color: C.blue,    icon: Briefcase },
   visitante:   { label: 'Visitante',     color: C.success, icon: UserCheck },
 };
 

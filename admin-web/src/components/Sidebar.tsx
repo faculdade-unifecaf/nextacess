@@ -8,7 +8,7 @@ import { authService } from '../services/authService';
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/empresas', icon: Building2, label: 'Empresas' },
-  { to: '/funcionarios', icon: Users, label: 'Funcionários' },
+  { to: '/funcionarios', icon: Users, label: 'Usuários' },
   { to: '/visitantes', icon: UserPlus, label: 'Visitantes' },
   { to: '/avisos', icon: Bell, label: 'Avisos' },
   { to: '/acessos',        icon: ShieldCheck,   label: 'Acessos' },
@@ -21,7 +21,7 @@ export default function Sidebar() {
   const { theme } = useTheme();
 
   // dark mode usa logo clara; light mode usa logo escura
-  const logoSrc = theme === 'dark' ? '/img/logo_light_theme.png' : '/img/logo_dark_theme.png';
+  const logoSrc = theme === 'dark' ? '/img/logo_dark_theme.png' : '/img/logo_light_theme.png';
 
   const aguardando = visitantes.filter(v => v.status === 'Aguardando').length;
   const avisosAtivos = avisos.filter(a => a.ativo).length;

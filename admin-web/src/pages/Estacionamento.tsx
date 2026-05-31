@@ -33,7 +33,7 @@ const STATUS_SESSAO: Record<string, { cls: string; label: string }> = {
 
 const ROLE_CFG: Record<string, { cls: string; label: string }> = {
   admin:       { cls: 'badge-blue',    label: 'Admin'       },
-  funcionario: { cls: 'badge-neutral', label: 'Funcionário' },
+  funcionario: { cls: 'badge-neutral', label: 'Usuário' },
   visitante:   { cls: 'badge-amber',   label: 'Visitante'   },
 };
 

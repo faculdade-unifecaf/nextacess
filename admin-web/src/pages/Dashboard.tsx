@@ -5,10 +5,10 @@ import { Building2, Users, UserPlus, ShieldCheck, Bell, ShieldAlert, ArrowUpRigh
 
 const TIPO_PESSOA_CFG: Record<string, { cls: string; label: string }> = {
   admin:         { cls: 'badge-blue',    label: 'Administrador' },
-  funcionario:   { cls: 'badge-neutral', label: 'Funcionário'   },
+  funcionario:   { cls: 'badge-neutral', label: 'Usuário'       },
   visitante:     { cls: 'badge-amber',   label: 'Visitante'     },
   Administrador: { cls: 'badge-blue',    label: 'Administrador' },
-  'Funcionário': { cls: 'badge-neutral', label: 'Funcionário'   },
+  'Funcionário': { cls: 'badge-neutral', label: 'Usuário'       },
   Visitante:     { cls: 'badge-amber',   label: 'Visitante'     },
 };
 
@@ -27,7 +27,7 @@ export default function Dashboard() {
 
   const stats = [
     { icon: Building2,  label: 'Empresas Ativas',   value: totalEmpresas,  color: '#4c9eff', sub: `${empresas.length} cadastradas`,      trend: 'No prédio',     pos: true },
-    { icon: Users,      label: 'Funcionários Ativos', value: funcAtivos,    color: '#4c9eff', sub: `${funcionarios.length} total`,          trend: 'Credenciados',  pos: true },
+    { icon: Users,      label: 'Usuários Ativos',     value: funcAtivos,    color: '#4c9eff', sub: `${funcionarios.length} total`,          trend: 'Credenciados',  pos: true },
     { icon: UserPlus,   label: 'Visitantes Hoje',    value: visitantesHoje, color: '#ffaa00', sub: `${aguardando} aguardando`,             trend: aguardando > 0 ? `${aguardando} pendente${aguardando > 1 ? 's' : ''}` : 'Nenhum pendente', pos: aguardando === 0 },
     { icon: ShieldCheck,label: 'Acessos Hoje',       value: acessosHoje,   color: '#4c9eff', sub: 'registros do dia',                     trend: 'Portaria ativa', pos: true },
     { icon: Bell,       label: 'Avisos Ativos',      value: avisosAtivos,  color: '#ffaa00', sub: 'comunicados vigentes',                 trend: 'Publicados',    pos: true },

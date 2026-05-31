@@ -20,7 +20,7 @@ export default function Login({ onLogin }: LoginProps) {
   const [erro,     setErro]     = useState('');
   const [imgOk,    setImgOk]    = useState(true);
 
-  const logoSrc = theme === 'dark' ? '/img/logo_light_theme.png' : '/img/logo_dark_theme.png';
+  const logoSrc = theme === 'dark' ? '/img/logo_dark_theme.png' : '/img/logo_light_theme.png';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,7 +144,7 @@ export default function Login({ onLogin }: LoginProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
               {[
                 { color: '#4c9eff', label: 'Reconhecimento facial inteligente' },
-                { color: '#22d35e', label: 'Gestão de funcionários e visitantes' },
+                { color: '#22d35e', label: 'Gestão de usuários e visitantes' },
                 { color: '#ffaa00', label: 'Controle de estacionamento integrado' },
               ].map(({ color, label }) => (
                 <div key={label} style={{

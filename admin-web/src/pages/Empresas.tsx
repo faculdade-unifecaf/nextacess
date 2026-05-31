@@ -4,6 +4,19 @@ import { useAdmin } from '../context/AdminContext';
 import { Plus, Building2, X, Check, Trash2, Edit2, Search } from 'lucide-react';
 import type { Empresa, StatusEmpresa } from '../data/mockData';
 
+const fmtCnpj = (cnpj: string) => {
+  const c = cnpj.replace(/\D/g, '');
+  if (c.length !== 14) return cnpj;
+  return `${c.slice(0, 2)}.${c.slice(2, 5)}.${c.slice(5, 8)}/${c.slice(8, 12)}-${c.slice(12)}`;
+};
+
+const fmtTelefone = (tel: string) => {
+  const c = tel.replace(/\D/g, '');
+  if (c.length === 11) return `(${c.slice(0, 2)}) ${c.slice(2, 7)}-${c.slice(7)}`;
+  if (c.length === 10) return `(${c.slice(0, 2)}) ${c.slice(2, 6)}-${c.slice(6)}`;
+  return tel;
+};
+
 function EmpresaModal({ onClose, onSave, initial }: {
   onClose: () => void;
   onSave: (data: Omit<Empresa, 'id' | 'avatarColor'>) => void;
@@ -66,7 +79,7 @@ function EmpresaModal({ onClose, onSave, initial }: {
 }
 
 export default function Empresas() {
-  const { empresas, addEmpresa, updateEmpresa, removeEmpresa } = useAdmin();
+  const { empresas, funcionarios, addEmpresa, updateEmpresa, removeEmpresa } = useAdmin();
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Empresa | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
@@ -114,33 +127,40 @@ export default function Empresas() {
                 <th>Andar / Sala</th>
                 <th>Responsável</th>
                 <th>Contato</th>
+                <th>Usuários</th>
                 <th>Status</th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(e => (
+              {filtered.map(e => {
+              const totalUsuarios = funcionarios.filter(f => f.empresa_id === e.id).length;
+              return (
                 <tr key={e.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>
+                  <td style={{ maxWidth: 220 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div className="avatar avatar-sm" style={{ background: `${e.avatarColor}20`, color: e.avatarColor, boxShadow: `0 0 8px ${e.avatarColor}30`, flexShrink: 0 }}>
                         {e.nome.charAt(0)}
                       </div>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 13 }}>{e.nome}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>desde {e.data_cadastro}</div>
+                      <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={e.nome}>
+                        {e.nome}
                       </div>
                     </div>
                   </td>
-                  <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{e.cnpj}</td>
-                  <td>
+                  <td style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtCnpj(e.cnpj)}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
                     <span style={{ fontWeight: 700, fontSize: 13 }}>{e.andar}º andar</span>
                     <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 4 }}>· Sala {e.sala}</span>
                   </td>
-                  <td style={{ fontSize: 13 }}>{e.responsavel}</td>
-                  <td>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{e.email}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{e.telefone}</div>
+                  <td style={{ fontSize: 13, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={e.responsavel}>
+                    {e.responsavel}
+                  </td>
+                  <td style={{ maxWidth: 180 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={e.email}>{e.email}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtTelefone(e.telefone)}</div>
+                  </td>
+                  <td style={{ fontWeight: 700, fontSize: 14, color: totalUsuarios > 0 ? 'var(--text-primary)' : 'var(--text-muted)', textAlign: 'center' }}>
+                    {totalUsuarios}
                   </td>
                   <td>
                     <span className={`badge ${e.status === 'Ativa' ? 'badge-green' : 'badge-amber'}`}>{e.status}</span>
@@ -152,7 +172,8 @@ export default function Empresas() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              );
+            })}
             </tbody>
           </table>
         </div>

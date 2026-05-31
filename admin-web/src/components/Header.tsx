@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Sun, Moon, MessageSquare } from 'lucide-react';
+import { Sun, Moon, MessageSquare } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -10,8 +10,7 @@ interface HeaderProps {
 }
 
 export default function Header({ title, subtitle, onOpenChat }: HeaderProps) {
-  const { avisos, visitantes } = useAdmin();
-  const avisosAtivos = avisos.filter(a => a.ativo).length;
+  const { visitantes } = useAdmin();
   const aguardando = visitantes.filter(v => v.status === 'Aguardando').length;
 
   const { theme, toggleTheme } = useTheme();
@@ -45,18 +44,6 @@ export default function Header({ title, subtitle, onOpenChat }: HeaderProps) {
         <MessageSquare size={16} />
       </button>
 
-      <button className="btn btn-ghost btn-icon" style={{ position: 'relative' }}>
-        <Bell size={16} />
-        {avisosAtivos > 0 && (
-          <span style={{
-            position: 'absolute', top: 5, right: 5,
-            width: 6, height: 6,
-            background: 'var(--blue)',
-            borderRadius: '50%',
-            border: '1.5px solid var(--bg-base)',
-          }} />
-        )}
-      </button>
     </header>
   );
 }
