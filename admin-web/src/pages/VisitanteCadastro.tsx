@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, User, Mail, Phone, Building2, FileText, Calendar, Clock, AlertCircle, ArrowRight } from 'lucide-react';
 
-const API = 'http://localhost:3000/api';
+const API = import.meta.env.VITE_API_URL ?? 'http://192.168.0.104:3000/api';
 
 interface Empresa { id: string; nome: string; andar: number; sala: string }
 
@@ -124,10 +124,10 @@ export default function VisitanteCadastro() {
                   <CheckCircle size={34} color="#22d35e" />
                 </div>
                 <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>
-                  Cadastro realizado!
+                  Cadastro concluído!
                 </h2>
                 <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: '0 0 24px' }}>
-                  Seu QR Code de acesso foi enviado para<br />
+                  Após a empresa aprovar o seu acesso, você receberá o QR Code de liberação em<br />
                   <strong style={{ color: '#4c9eff' }}>{form.email}</strong>
                 </p>
                 {empresa && (
@@ -143,7 +143,7 @@ export default function VisitanteCadastro() {
                   </div>
                 )}
                 <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', lineHeight: 1.6 }}>
-                  Verifique sua caixa de entrada (e pasta de spam).<br />O QR Code é válido por 48 horas.
+                  Fique de olho na sua caixa de entrada (e pasta de spam).<br />O QR Code será válido por 48 horas a partir do envio.
                 </p>
               </div>
             )}

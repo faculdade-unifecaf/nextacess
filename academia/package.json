@@ -4,10 +4,13 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
+    "lan": "expo start --lan",
+    "tunnel": "expo start --tunnel",
+    "web": "expo start --web",
+    "web:lan": "expo start --web --lan",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web",
     "lint": "expo lint"
   },
   "dependencies": {

@@ -1,6 +1,12 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-const resend = new Resend(process.env.RESEND_API_KEY ?? '');
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER ?? '',
+    pass: process.env.GMAIL_APP_PASSWORD ?? '',
+  },
+});
 
 export interface VisitanteQRPayload {
   to: string;
@@ -11,7 +17,7 @@ export interface VisitanteQRPayload {
   data_visita: string;
   hora_prevista?: string | undefined;
   qr_token: string;
-  qrDataUrl: string;
+  qrBuffer: Buffer;
 }
 
 const fmtDate = (d: string) => {
@@ -20,72 +26,139 @@ const fmtDate = (d: string) => {
 };
 
 export const sendVisitanteQR = (p: VisitanteQRPayload) =>
-  resend.emails.send({
-    from: 'NextAccess <onboarding@resend.dev>',
-    to: p.to,
-    subject: `Seu QR Code de acesso — ${p.empresa}`,
-    html: buildHtml(p),
+  transporter.sendMail({
+    from:    `"NextAccess" <${process.env.GMAIL_USER}>`,
+    to:      p.to,
+    subject: `[NextAccess] Seu QR Code de acesso — ${p.empresa}`,
+    text:    buildText(p),
+    html:    buildHtml(p),
+    attachments: [{
+      filename: 'qrcode.png',
+      content:  p.qrBuffer,
+      cid:      'qrcode@nextaccess',
+    }],
   });
+
+function buildText(p: VisitanteQRPayload): string {
+  const data = fmtDate(p.data_visita);
+  return [
+    `Olá, ${p.nome}!`,
+    '',
+    'Seu cadastro de visitante foi confirmado. Apresente o QR Code na recepção.',
+    '',
+    `Empresa: ${p.empresa}`,
+    `Localização: ${p.andar}º andar · Sala ${p.sala}`,
+    `Data da visita: ${data}`,
+    p.hora_prevista ? `Horário previsto: ${p.hora_prevista}` : '',
+    '',
+    `Código de acesso: ${p.qr_token.slice(0, 8).toUpperCase()}`,
+    '',
+    'O QR Code está na versão HTML deste email. Abra-o em um cliente de email compatível.',
+    'Válido por 48 horas a partir do cadastro.',
+    '',
+    '© 2026 NextAccess',
+  ].filter(Boolean).join('\n');
+}
 
 function buildHtml(p: VisitanteQRPayload): string {
   const data = fmtDate(p.data_visita);
   const horario = p.hora_prevista
     ? `<tr>
-        <td style="padding:5px 0;font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Horário previsto</td>
-        <td style="padding:5px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right">${p.hora_prevista}</td>
+        <td style="padding:6px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Horário previsto</td>
+        <td style="padding:6px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;border-bottom:1px solid #f1f5f9">${p.hora_prevista}</td>
        </tr>`
     : '';
 
   return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 16px">
+<html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Seu QR Code de acesso — NextAccess</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%">
+
+<!-- Preheader oculto (aparece como preview na caixa de entrada) -->
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">
+  Olá ${p.nome}, seu QR Code de acesso para ${p.empresa} está pronto. Válido por 48h. ‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌‌
+</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;padding:40px 16px">
 <tr><td align="center">
-<table width="540" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.08)">
-  <tr><td style="background:linear-gradient(135deg,#060608 0%,#0d0d1a 100%);padding:36px 40px;text-align:center">
-    <div style="font-size:24px;font-weight:900;letter-spacing:3px;color:#fff">NEXTACCESS</div>
-    <div style="font-size:10px;color:#4c9eff;letter-spacing:4px;text-transform:uppercase;margin-top:4px">Sistema de Controle de Acesso</div>
+<table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #e2e8f0">
+
+  <!-- Header -->
+  <tr><td style="background:linear-gradient(135deg,#060608 0%,#0d0d1a 100%);padding:32px 40px;text-align:center">
+    <div style="display:inline-block;background:rgba(76,158,255,0.12);border:1px solid rgba(76,158,255,0.25);border-radius:8px;padding:6px 14px;margin-bottom:16px">
+      <span style="font-size:9px;font-weight:700;letter-spacing:3px;color:#4c9eff;text-transform:uppercase">Sistema de Controle de Acesso</span>
+    </div>
+    <div style="font-size:26px;font-weight:900;letter-spacing:4px;color:#ffffff;line-height:1">NEXTACCESS</div>
   </td></tr>
-  <tr><td style="padding:36px 40px 0">
-    <p style="margin:0 0 6px;font-size:20px;font-weight:800;color:#0f172a">Olá, ${p.nome}!</p>
-    <p style="margin:0 0 28px;font-size:14px;color:#64748b;line-height:1.6">
-      Seu cadastro foi recebido com sucesso. Apresente o QR Code abaixo na recepção no dia da visita para registrar sua <strong>entrada</strong> e <strong>saída</strong>.
+
+  <!-- Body -->
+  <tr><td style="padding:36px 40px 28px">
+
+    <p style="margin:0 0 4px;font-size:22px;font-weight:800;color:#0f172a;line-height:1.2">Olá, ${p.nome}!</p>
+    <p style="margin:0 0 28px;font-size:14px;color:#64748b;line-height:1.7">
+      Seu cadastro foi confirmado com sucesso. Apresente o <strong style="color:#0f172a">QR Code</strong> abaixo na recepção no dia da visita para registrar sua entrada e saída.
     </p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;margin-bottom:28px">
-      <tr><td style="padding:22px 26px">
-        <table width="100%" cellpadding="0" cellspacing="0">
+
+    <!-- Info card -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;margin-bottom:28px">
+      <tr><td style="padding:20px 24px">
+        <p style="margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8">Detalhes da visita</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td style="padding:5px 0;font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Empresa</td>
-            <td style="padding:5px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right">${p.empresa}</td>
+            <td style="padding:6px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Empresa</td>
+            <td style="padding:6px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;border-bottom:1px solid #f1f5f9">${p.empresa}</td>
           </tr>
           <tr>
-            <td style="padding:5px 0;font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Localização</td>
-            <td style="padding:5px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right">${p.andar}º andar · Sala ${p.sala}</td>
+            <td style="padding:6px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Localização</td>
+            <td style="padding:6px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;border-bottom:1px solid #f1f5f9">${p.andar}º andar · Sala ${p.sala}</td>
           </tr>
           <tr>
-            <td style="padding:5px 0;font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Data da visita</td>
-            <td style="padding:5px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right">${data}</td>
+            <td style="padding:6px 0;font-size:13px;color:#64748b${p.hora_prevista ? ';border-bottom:1px solid #f1f5f9' : ''}">Data da visita</td>
+            <td style="padding:6px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right${p.hora_prevista ? ';border-bottom:1px solid #f1f5f9' : ''}">${data}</td>
           </tr>
           ${horario}
         </table>
       </td></tr>
     </table>
-    <table width="100%" cellpadding="0" cellspacing="0">
-      <tr><td align="center" style="background:#0a0a12;border-radius:18px;padding:32px 24px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#4c9eff;margin-bottom:18px">QR Code de Acesso</div>
-        <img src="${p.qrDataUrl}" width="200" height="200" alt="QR Code" style="display:block;border-radius:12px;background:#fff;padding:6px">
-        <div style="margin-top:14px;font-size:11px;color:#475569;font-family:monospace;letter-spacing:.12em">${p.qr_token.slice(0, 8).toUpperCase()}</div>
+
+    <!-- QR Code -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr><td align="center" style="background:linear-gradient(135deg,#0a0a12 0%,#0d0d1a 100%);border-radius:18px;padding:36px 24px;border:1px solid rgba(255,255,255,0.06)">
+        <p style="margin:0 0 4px;font-size:9px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;color:#4c9eff">QR Code de Acesso</p>
+        <p style="margin:0 0 20px;font-size:11px;color:rgba(255,255,255,0.35)">Apresente na recepção</p>
+        <div style="display:inline-block;background:#ffffff;border-radius:14px;padding:10px;line-height:0">
+          <img src="cid:qrcode@nextaccess" width="200" height="200" alt="QR Code de acesso NextAccess" style="display:block;border-radius:6px">
+        </div>
+        <p style="margin:16px 0 0;font-size:12px;color:rgba(255,255,255,0.3);font-family:'Courier New',Courier,monospace;letter-spacing:.18em">${p.qr_token.slice(0, 8).toUpperCase()}</p>
       </td></tr>
     </table>
-    <p style="margin:24px 0 0;font-size:12px;color:#94a3b8;text-align:center;line-height:1.7">
-      Este QR Code é válido por <strong>48 horas</strong> a partir do cadastro.<br>
-      Apresente-o na recepção para registrar sua entrada e saída.
-    </p>
+
+    <!-- Aviso de validade -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px">
+      <tr><td style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 18px">
+        <p style="margin:0;font-size:12px;color:#92400e;line-height:1.6">
+          <strong>Atenção:</strong> este QR Code é válido por <strong>48 horas</strong> a partir do seu cadastro. Após esse prazo, entre em contato com a recepção do edifício.
+        </p>
+      </td></tr>
+    </table>
+
   </td></tr>
-  <tr><td style="padding:28px 40px;text-align:center">
+
+  <!-- Footer -->
+  <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:22px 40px;text-align:center">
+    <p style="margin:0 0 6px;font-size:12px;color:#94a3b8;line-height:1.6">
+      Você recebeu este email porque se cadastrou como visitante no NextAccess.<br>
+      Se não foi você, ignore esta mensagem.
+    </p>
     <p style="margin:0;font-size:11px;color:#cbd5e1">© 2026 NextAccess · Todos os direitos reservados</p>
   </td></tr>
+
 </table>
 </td></tr>
 </table>

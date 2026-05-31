@@ -1,9 +1,9 @@
 import { randomUUID } from 'crypto';
-import QRCode from 'qrcode';
 import sql from '../config/database';
-import { sendVisitanteQR } from './email.service';
 
 export const migrate = async () => {
+  await sql`ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS telefone TEXT`;
+  await sql`ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS email TEXT`;
   await sql`ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS qr_token TEXT UNIQUE`;
   await sql`ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS qr_expires_at TIMESTAMPTZ`;
 };
@@ -41,23 +41,7 @@ export const cadastrar = async (d: {
     SELECT nome, andar, sala FROM empresas WHERE id = ${d.empresa_id}
   `)[0] as any;
 
-  const qrDataUrl = await QRCode.toDataURL(qr_token, {
-    width: 300, margin: 2,
-    color: { dark: '#0a0a12', light: '#ffffff' },
-  });
-
-  await sendVisitanteQR({
-    to:           d.email,
-    nome:         d.nome_completo,
-    empresa:      empresa?.nome      ?? '',
-    andar:        empresa?.andar     ?? '',
-    sala:         empresa?.sala      ?? '',
-    data_visita:  d.data_visita,
-    hora_prevista: d.hora_prevista,
-    qr_token,
-    qrDataUrl,
-  });
-
+  // QR Code gerado e salvo no DB, mas o email só é enviado quando a recepção aprovar.
   return visitante;
 };
 
