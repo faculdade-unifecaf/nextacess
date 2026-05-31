@@ -15,7 +15,7 @@ export const cadastrar = async (req: Request, res: Response) => {
     const visitante = await svc.cadastrar(req.body);
     res.status(201).json(visitante);
   } catch (err: any) {
-    res.status(500).json({ error: err?.message ?? 'Erro interno ao cadastrar visitante.' });
+    res.status(err?.code === 'CPF_DUPLICADO' ? 409 : 500).json({ error: err?.message ?? 'Erro interno ao cadastrar visitante.' });
   }
 };
 

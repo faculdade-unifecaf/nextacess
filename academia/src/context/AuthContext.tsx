@@ -14,6 +14,7 @@ export interface AuthUser {
   empresa_id?: string;
   avatar_color?: string;
   visitanteStatus?: string;
+  qr_token?: string | null;
 }
 
 interface AuthContextType {

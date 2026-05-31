@@ -13,7 +13,24 @@ export const findAll = () =>
 export const findById = async (id: string) =>
   (await sql`SELECT * FROM visitantes WHERE id=${id}`)[0] ?? null;
 
+const checkCpfUnico = async (cpf: string, excludeId?: string) => {
+  const digits = (cpf ?? '').replace(/\D/g, '');
+  if (!digits) return;
+  const [existV] = await sql`
+    SELECT id FROM visitantes
+    WHERE REGEXP_REPLACE(cpf, '[^0-9]', '', 'g') = ${digits}
+    ${excludeId ? sql`AND id <> ${excludeId}` : sql``}
+  `;
+  if (existV) throw Object.assign(new Error('CPF já cadastrado no sistema.'), { code: 'CPF_DUPLICADO' });
+  const [existF] = await sql`
+    SELECT id FROM funcionarios
+    WHERE REGEXP_REPLACE(cpf, '[^0-9]', '', 'g') = ${digits}
+  `;
+  if (existF) throw Object.assign(new Error('CPF já cadastrado no sistema.'), { code: 'CPF_DUPLICADO' });
+};
+
 export const create = async (d: any) => {
+  await checkCpfUnico(d.cpf ?? '');
   const visitante = (await sql`
     INSERT INTO visitantes (nome_completo, cpf, email, empresa_id, funcionario_id, motivo,
                              data_visita, hora_prevista, status)

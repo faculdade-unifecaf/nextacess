@@ -37,7 +37,12 @@ export default function VisitanteHomeScreen() {
   if (!user) return null;
 
   const status  = user.visitanteStatus ?? 'Aguardando';
-  const { token, seconds } = useRotatingToken(user.id);
+
+  // Visitantes do formulário público têm qr_token UUID fixo
+  // Visitantes cadastrados pela recepção usam token rotativo
+  const isPublicForm = !!user.qr_token;
+  const { token: rotatingToken, seconds } = useRotatingToken(user.id);
+  const token    = isPublicForm ? user.qr_token! : rotatingToken;
   const progress = seconds / 30;
   const timerColor = seconds > 10 ? C.blue : seconds > 5 ? C.warning : C.danger;
 
@@ -100,21 +105,23 @@ export default function VisitanteHomeScreen() {
             <View style={s.qrWrap}>
               {token ? <QRCode value={token} size={220} color="#000000" backgroundColor="#ffffff" /> : <ActivityIndicator color={C.blue} />}
             </View>
-            <View style={s.timerSection}>
-              <View style={s.timerHeader}>
-                <Text style={s.timerLabel}>Renova em</Text>
-                <Text style={[s.timerCount, { color: timerColor }]}>{seconds}s</Text>
+            {!isPublicForm && (
+              <View style={s.timerSection}>
+                <View style={s.timerHeader}>
+                  <Text style={s.timerLabel}>Renova em</Text>
+                  <Text style={[s.timerCount, { color: timerColor }]}>{seconds}s</Text>
+                </View>
+                <View style={s.timerTrack}>
+                  <Animated.View style={[
+                    s.timerFill,
+                    {
+                      width: animWidth.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+                      backgroundColor: timerColor,
+                    },
+                  ]} />
+                </View>
               </View>
-              <View style={s.timerTrack}>
-                <Animated.View style={[
-                  s.timerFill,
-                  {
-                    width: animWidth.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-                    backgroundColor: timerColor,
-                  },
-                ]} />
-              </View>
-            </View>
+            )}
           </View>
         )}
 

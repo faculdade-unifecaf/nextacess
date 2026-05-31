@@ -58,6 +58,7 @@ export default function VisitanteCadastro() {
         body: JSON.stringify(form),
       });
       const data = await res.json();
+      if (res.status === 409) throw new Error('Este CPF já possui um cadastro no sistema. Caso precise de acesso, entre em contato com a recepção.');
       if (!res.ok) throw new Error(data.error ?? 'Erro ao cadastrar.');
       setStep('success');
     } catch (err: any) {

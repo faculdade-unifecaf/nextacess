@@ -12,11 +12,13 @@ const fmtCpf = (cpf: string) => {
 
 function FuncionarioModal({ onClose, onSave, initial, empresas }: {
   onClose: () => void;
-  onSave: (data: Omit<Funcionario, 'id' | 'avatarColor'>) => void;
+  onSave: (data: Omit<Funcionario, 'id' | 'avatarColor'>) => Promise<void>;
   initial?: Partial<Funcionario>;
   empresas: { id: string; nome: string }[];
 }) {
   const hoje = new Date().toISOString().slice(0, 10);
+  const [saving, setSaving] = useState(false);
+  const [errMsg, setErrMsg] = useState('');
   const [form, setForm] = useState({
     nome_completo: initial?.nome_completo || '',
     cpf: initial?.cpf || '',
@@ -29,13 +31,21 @@ function FuncionarioModal({ onClose, onSave, initial, empresas }: {
   });
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nome_completo || !form.cpf || !form.email || !form.empresa_id) {
-      alert('Nome, CPF, e-mail e empresa são obrigatórios.');
+      setErrMsg('Nome, CPF, e-mail e empresa são obrigatórios.');
       return;
     }
-    onSave(form as Omit<Funcionario, 'id' | 'avatarColor'>);
-    onClose();
+    setSaving(true);
+    setErrMsg('');
+    try {
+      await onSave(form as Omit<Funcionario, 'id' | 'avatarColor'>);
+      onClose();
+    } catch (e: any) {
+      setErrMsg(e?.response?.data?.error ?? e?.message ?? 'Erro ao salvar usuário.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -45,6 +55,11 @@ function FuncionarioModal({ onClose, onSave, initial, empresas }: {
           <h3 className="modal-title">{initial?.nome_completo ? 'Editar Usuário' : 'Novo Usuário'}</h3>
           <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
+        {errMsg && (
+          <div style={{ margin: '0 0 14px', padding: '10px 14px', background: 'rgba(255,58,58,0.08)', border: '1px solid rgba(255,58,58,0.25)', borderRadius: 8, fontSize: 13, color: 'var(--red)' }}>
+            {errMsg}
+          </div>
+        )}
         <div className="form-row">
           <div className="form-group"><label>Nome Completo *</label><input value={form.nome_completo} onChange={e => set('nome_completo', e.target.value)} placeholder="Nome completo" /></div>
           <div className="form-group"><label>CPF *</label><input value={form.cpf} onChange={e => set('cpf', e.target.value)} placeholder="000.000.000-00" /></div>
@@ -78,7 +93,7 @@ function FuncionarioModal({ onClose, onSave, initial, empresas }: {
         )}
         <div className="modal-actions">
           <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" onClick={handleSave}><Check size={14} />Salvar</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}><Check size={14} />{saving ? 'Salvando…' : 'Salvar'}</button>
         </div>
       </div>
     </div>
@@ -206,13 +221,7 @@ export default function Funcionarios() {
         <FuncionarioModal
           onClose={() => { setModal(false); setEditing(null); }}
           onSave={async data => {
-            try {
-              editing ? await updateFuncionario(editing.id, data) : await addFuncionario(data);
-              setModal(false);
-              setEditing(null);
-            } catch (e: any) {
-              alert(e?.response?.data?.error ?? 'Erro ao salvar usuário');
-            }
+            editing ? await updateFuncionario(editing.id, data) : await addFuncionario(data);
           }}
           initial={editing ?? undefined}
           empresas={empresas.filter(e => e.status === 'Ativa')}

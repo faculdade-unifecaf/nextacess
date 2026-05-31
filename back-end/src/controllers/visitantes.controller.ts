@@ -11,7 +11,11 @@ export const create = async (req: Request, res: Response) => {
   if (!nome_completo || !data_visita || !hora_prevista) {
     res.status(400).json({ error: 'nome_completo, data_visita e hora_prevista obrigatórios' }); return;
   }
-  res.status(201).json(await svc.create(req.body));
+  try {
+    res.status(201).json(await svc.create(req.body));
+  } catch (err: any) {
+    res.status(err.code === 'CPF_DUPLICADO' ? 409 : 500).json({ error: err.message });
+  }
 };
 export const update = async (req: Request, res: Response) => {
   const r = await svc.update(req.params['id'] as string, req.body);
