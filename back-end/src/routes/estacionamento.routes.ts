@@ -21,6 +21,7 @@ r.post('/sessao/:id/simular-pagamento', c.simularPagamento);
 r.get('/sessoes',         c.getSessoes);
 
 r.get('/plano',           c.getPlano);
+r.get('/planos/todos',    c.getTodosPlanos);
 r.post('/plano/assinar',  c.assinarPlano);
 
 export default r;
