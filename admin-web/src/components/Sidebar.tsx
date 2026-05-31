@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Building2, Users, UserPlus, Bell, ShieldCheck, LogOut, Lock, ParkingCircle } from 'lucide-react';
+import { LayoutDashboard, Building2, Users, UserPlus, Bell, ShieldCheck, LogOut, ParkingCircle } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
+import { useTheme } from '../context/ThemeContext';
 import { authService } from '../services/authService';
 
 const navItems = [
@@ -17,6 +18,10 @@ const navItems = [
 export default function Sidebar() {
   const navigate = useNavigate();
   const { visitantes, avisos } = useAdmin();
+  const { theme } = useTheme();
+
+  // dark mode usa logo clara; light mode usa logo escura
+  const logoSrc = theme === 'dark' ? '/img/logo_light_theme.png' : '/img/logo_dark_theme.png';
 
   const aguardando = visitantes.filter(v => v.status === 'Aguardando').length;
   const avisosAtivos = avisos.filter(a => a.ativo).length;
@@ -36,9 +41,11 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">
-          <Lock size={19} color="#fff" />
-        </div>
+        <img
+          src={logoSrc}
+          alt="NextAccess"
+          style={{ width: 36, height: 36, objectFit: 'contain', flexShrink: 0 }}
+        />
         <div>
           <div className="sidebar-logo-text">NEXTACCESS</div>
           <div className="sidebar-logo-sub">RECEPÇÃO</div>

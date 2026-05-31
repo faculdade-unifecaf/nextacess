@@ -1,22 +1,26 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, Eye, EyeOff, ArrowRight, Shield } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ArrowRight, Shield, Sun, Moon } from 'lucide-react';
 import { authService } from '../services/authService';
 import { useAdmin } from '../context/AdminContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface LoginProps {
   onLogin: () => void;
 }
 
 export default function Login({ onLogin }: LoginProps) {
-  const navigate    = useNavigate();
+  const navigate       = useNavigate();
   const { refreshAll } = useAdmin();
+  const { theme, toggleTheme } = useTheme();
   const [email,    setEmail]    = useState('');
   const [senha,    setSenha]    = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [erro,     setErro]     = useState('');
   const [imgOk,    setImgOk]    = useState(true);
+
+  const logoSrc = theme === 'dark' ? '/img/logo_light_theme.png' : '/img/logo_dark_theme.png';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +55,7 @@ export default function Login({ onLogin }: LoginProps) {
         }
         .login-right  {
           flex: 0 0 42%;
+          position: relative;
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           padding: 56px 48px;
           background: var(--bg-surface);
@@ -98,7 +103,7 @@ export default function Login({ onLogin }: LoginProps) {
             }}>
               {imgOk ? (
                 <img
-                  src="/img/logo.png"
+                  src={logoSrc}
                   alt="NextAccess"
                   onError={() => setImgOk(false)}
                   style={{
@@ -271,6 +276,22 @@ export default function Login({ onLogin }: LoginProps) {
               Em caso de problemas, contate o administrador.
             </p>
           </div>
+
+          {/* Toggle de tema */}
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+            style={{
+              position: 'absolute', top: 20, right: 20,
+              background: 'none', border: '1px solid var(--border-light)',
+              borderRadius: 10, padding: '6px 10px', cursor: 'pointer',
+              color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 12,
+            }}
+          >
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            {theme === 'dark' ? 'Claro' : 'Escuro'}
+          </button>
         </div>
 
       </div>

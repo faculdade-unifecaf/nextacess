@@ -395,16 +395,27 @@ export default function Estacionamento() {
                 </div>
               </div>
               {([
-                { key: 'valor_hora',        label: 'Valor por hora (R$)',             step: 0.01 },
-                { key: 'valor_diaria',       label: 'Diária máxima (R$)',              step: 0.01 },
-                { key: 'valor_mensalidade',  label: 'Mensalidade (R$)',                step: 0.01 },
-                { key: 'tolerancia_minutos', label: 'Tolerância após pagamento (min)', step: 1    },
-              ] as { key: keyof Tarifa; label: string; step: number }[]).map(({ key, label, step }) => (
+                { key: 'valor_hora',        label: 'Valor por hora',                  step: 0.01, prefix: 'R$' },
+                { key: 'valor_diaria',       label: 'Diária máxima',                  step: 0.01, prefix: 'R$' },
+                { key: 'valor_mensalidade',  label: 'Mensalidade',                    step: 0.01, prefix: 'R$' },
+                { key: 'tolerancia_minutos', label: 'Tolerância após pagamento',       step: 1,    prefix: 'min' },
+              ] as { key: keyof Tarifa; label: string; step: number; prefix: string }[]).map(({ key, label, step, prefix }) => (
                 <div className="form-group" key={key}>
                   <label>{label}</label>
-                  <input type="number" value={form[key]}
-                    onChange={e => setForm(f => f ? { ...f, [key]: Number(e.target.value) } : f)}
-                    min={0} step={step} />
+                  <div style={{ position: 'relative' }}>
+                    <span style={{
+                      position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+                      fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', pointerEvents: 'none',
+                    }}>
+                      {prefix}
+                    </span>
+                    <input
+                      type="number" value={form[key]}
+                      onChange={e => setForm(f => f ? { ...f, [key]: Number(e.target.value) } : f)}
+                      min={0} step={step}
+                      style={{ paddingLeft: prefix === 'R$' ? 36 : 44 }}
+                    />
+                  </div>
                 </div>
               ))}
               <button onClick={salvarTarifas} disabled={saving} className="btn btn-primary"

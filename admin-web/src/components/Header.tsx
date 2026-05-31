@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Bell, Sun, Moon, MessageSquare } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface HeaderProps {
   title: string;
@@ -13,16 +14,7 @@ export default function Header({ title, subtitle, onOpenChat }: HeaderProps) {
   const avisosAtivos = avisos.filter(a => a.ativo).length;
   const aguardando = visitantes.filter(v => v.status === 'Aguardando').length;
 
-  const [theme, setTheme] = useState<'dark' | 'light'>(
-    () => (localStorage.getItem('theme') as 'dark' | 'light') || 'dark'
-  );
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-  };
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="header">
