@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, User, Mail, Phone, Building2, FileText, Calendar, Clock, AlertCircle, ArrowRight } from 'lucide-react';
 
-const API = import.meta.env.VITE_API_URL ?? 'http://192.168.0.104:3000/api';
+const API = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '') + '/api';
 
 interface Empresa { id: string; nome: string; andar: number; sala: string }
 

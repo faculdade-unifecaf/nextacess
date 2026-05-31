@@ -117,7 +117,7 @@ export const validarQR = async (req: Request, res: Response) => {
 
 // Mobile faz polling neste endpoint
 export const consultarAcesso = (req: Request, res: Response) => {
-  const { userId } = req.params;
+  const userId = req.params['userId'] as string;
   const entry = recentAccess.get(userId);
   if (!entry || Date.now() - entry.at > 10000) {
     res.json({ novo: false }); return;

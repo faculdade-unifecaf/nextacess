@@ -6,7 +6,16 @@ import { stripeWebhook } from './controllers/estacionamento.controller';
 
 const app = express();
 
-app.use(cors({ origin: '*' }));
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
+  : ['*'];
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) cb(null, true);
+    else cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
 app.use(helmet());
 
 // Stripe exige raw body para verificar assinatura — registrado antes do express.json()
