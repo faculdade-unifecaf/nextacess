@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { QrCode, UserPlus, Bell, ArrowRight, LogIn } from 'lucide-react-native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { C } from '../../constants/theme';
 
 // cast necessário — mesma limitação de tipos do SplashScreen
@@ -50,12 +49,9 @@ const SLIDES: Slide[] = [
   },
 ];
 
-interface Props {
-  navigation: NativeStackNavigationProp<any>;
-}
+interface Props { onDone: () => void; }
 
-export default function OnboardingScreen({ navigation }: Props) {
-  const onDone = () => navigation.replace('Login');
+export default function OnboardingScreen({ onDone }: Props) {
   const [index, setIndex]     = useState(0);
   const [slideH, setSlideH]   = useState(0);
   const flatRef               = useRef<FlatList>(null);
