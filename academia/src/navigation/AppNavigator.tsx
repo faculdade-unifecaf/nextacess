@@ -191,7 +191,9 @@ export default function AppNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
           <>
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen name="Onboarding">
+              {({ navigation }) => <OnboardingScreen onDone={() => navigation.replace('Login')} />}
+            </Stack.Screen>
             <Stack.Screen name="Login"      component={LoginScreen}      />
           </>
         ) : user.role === 'admin' ? (
