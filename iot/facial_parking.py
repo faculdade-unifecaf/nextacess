@@ -1,5 +1,6 @@
 import os
 os.environ.setdefault('QT_QPA_PLATFORM', 'xcb')
+os.environ.setdefault('OPENCV_LOG_LEVEL', 'ERROR')  # silencia warns de devices sem captura
 
 import cv2
 import requests
@@ -20,7 +21,9 @@ except ImportError:
     FR_AVAILABLE = False
 
 API_BASE   = os.environ.get("NEXTACCESS_API_URL", "http://localhost:3000") + "/api"
-CAMERA_IDX = None   # None = auto-detecta; ou force ex: 1 para USB
+# None = auto-detecta (prefere Elgato). Ou force um índice: ex. 4
+CAMERA_IDX     = None
+CAMERA_PREFIRA = os.environ.get("NEXTACCESS_CAMERA", "elgato").lower()
 
 GREEN  = (0, 220, 80)
 RED    = (0, 60, 220)
@@ -104,43 +107,96 @@ class FaceDatabase:
         return time.time() - self._last_refresh > REFRESH_FACES_INTERVAL
 
 
-# ── Thread de captura ─────────────────────────────────────────────────────────
+# ── Thread de captura — resiliente a falhas de USB ────────────────────────────
 class FrameGrabber(threading.Thread):
-    def __init__(self, cap):
+    def __init__(self, cap, idx):
         super().__init__(daemon=True)
-        self.cap   = cap
-        self.frame = None
-        self.lock  = threading.Lock()
+        self.cap     = cap
+        self.idx     = idx
+        self.frame   = None
+        self.lock    = threading.Lock()
+        self.running = True
 
     def run(self):
-        while True:
-            ret, frame = self.cap.read()
-            if ret and frame is not None:
+        falhas = 0
+        while self.running:
+            try:
+                ret, frame = self.cap.read()
+            except Exception:
+                ret, frame = False, None
+
+            if ret and frame is not None and frame.size > 0:
+                falhas = 0
                 with self.lock:
                     self.frame = frame
+            else:
+                falhas += 1
+                if falhas >= 30:
+                    print(f"\n[Câmera] Reconectando /dev/video{self.idx}...")
+                    try: self.cap.release()
+                    except Exception: pass
+                    time.sleep(0.5)
+                    self.cap = abrir_camera(self.idx)
+                    falhas = 0
+                else:
+                    time.sleep(0.02)
 
     def latest(self):
         with self.lock:
             return self.frame.copy() if self.frame is not None else None
 
+    def stop(self):
+        self.running = False
+
 
 # ── Utilitários ───────────────────────────────────────────────────────────────
+def _nome_camera(i: int) -> str:
+    try:
+        with open(f"/sys/class/video4linux/video{i}/name") as f:
+            return f.read().strip().lower()
+    except Exception:
+        return ""
+
+
+def abrir_camera(idx: int):
+    """Abre a câmera com backend V4L2 (mais estável no Linux)."""
+    cap = cv2.VideoCapture(idx, cv2.CAP_V4L2)
+    if not cap.isOpened():
+        cap = cv2.VideoCapture(idx)
+    return cap
+
+
 def encontrar_camera(excluir: list[int] = []) -> int:
-    print("Detectando câmera USB para estacionamento...")
-    for i in range(8):
+    print("Detectando câmera para estacionamento...")
+    candidatos = []
+    for i in range(10):
         if i in excluir:
             continue
-        cap = cv2.VideoCapture(i)
+        nome = _nome_camera(i)
+        cap = cv2.VideoCapture(i, cv2.CAP_V4L2)
         if not cap.isOpened():
             cap.release()
             continue
         ret, frame = cap.read()
         cap.release()
         if ret and frame is not None and frame.size > 0:
-            print(f"  [OK] /dev/video{i} — usando esta para facial")
+            marca = f" [{nome}]" if nome else ""
+            print(f"  [OK] /dev/video{i}{marca}")
+            candidatos.append((i, nome))
+        else:
+            print(f"  [--] /dev/video{i} — sem frames úteis")
+
+    if not candidatos:
+        return -1
+
+    for i, nome in candidatos:
+        if CAMERA_PREFIRA and CAMERA_PREFIRA in nome:
+            print(f"  → Usando /dev/video{i} ({nome})")
             return i
-        print(f"  [--] /dev/video{i} — sem frames úteis")
-    return -1
+
+    i = candidatos[0][0]
+    print(f"  → Usando /dev/video{i}")
+    return i
 
 
 def chamar_api(user_id: str) -> dict:
@@ -194,7 +250,7 @@ def main():
         print("\n[ERRO] Nenhuma câmera USB encontrada.")
         sys.exit(1)
 
-    cap = cv2.VideoCapture(idx)
+    cap = abrir_camera(idx)
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -212,7 +268,7 @@ def main():
     print("Carregando cadastros faciais...")
     db.refresh()
 
-    grabber = FrameGrabber(cap)
+    grabber = FrameGrabber(cap, idx)
     grabber.start()
 
     cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
@@ -282,7 +338,9 @@ def main():
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    cap.release()
+    grabber.stop()
+    try: grabber.cap.release()
+    except Exception: pass
     cv2.destroyAllWindows()
 
 
