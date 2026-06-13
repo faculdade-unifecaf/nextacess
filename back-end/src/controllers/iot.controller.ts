@@ -5,6 +5,10 @@ import * as acessosSvc from '../services/acessos.service';
 // Guarda o último resultado por userId (TTL de 10s)
 const recentAccess = new Map<string, { result: object; at: number }>();
 
+// Evita registrar entrada/saída duplicada quando o QR fica parado na câmera
+const lastRegister = new Map<string, number>();
+const REGISTER_COOLDOWN_MS = 8000;
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const validarQR = async (req: Request, res: Response) => {
@@ -66,6 +70,13 @@ export const validarQR = async (req: Request, res: Response) => {
     res.status(401).json({ autorizado: false, motivo: 'Token expirado' }); return;
   }
 
+  // Cooldown — QR parado na câmera não registra entrada/saída repetida
+  const ultimoRegistro = lastRegister.get(userId);
+  if (ultimoRegistro && Date.now() - ultimoRegistro < REGISTER_COOLDOWN_MS) {
+    const cache = recentAccess.get(userId);
+    res.json(cache?.result ?? { autorizado: true, repetido: true }); return;
+  }
+
   // Verifica funcionários
   const funcs = await sql`SELECT id, nome_completo, role, empresa_id FROM funcionarios WHERE id=${userId} AND status='Ativo'`;
   if (funcs[0]) {
@@ -73,13 +84,20 @@ export const validarQR = async (req: Request, res: Response) => {
     const emp = f.empresa_id
       ? (await sql`SELECT nome, andar FROM empresas WHERE id=${f.empresa_id}`)[0] as any
       : null;
+    // Alterna entrada/saída com base no último acesso do funcionário
+    const ultimo = await sql`
+      SELECT tipo FROM acessos
+      WHERE pessoa_nome=${f.nome_completo} AND status='Autorizado'
+      ORDER BY data_hora DESC LIMIT 1`;
+    const tipoFunc = (ultimo[0] as any)?.tipo === 'Entrada' ? 'Saída' : 'Entrada';
     await acessosSvc.create({
       pessoa_nome: f.nome_completo, pessoa_tipo: f.role,
       empresa: emp?.nome ?? null, andar: emp?.andar ?? null,
-      tipo: 'Entrada', status: 'Autorizado', local: 'Catraca Principal',
+      tipo: tipoFunc, status: 'Autorizado', local: 'Catraca Principal',
     });
-    const result = { autorizado: true, nome: f.nome_completo, tipo: f.role, empresa: emp?.nome ?? null };
+    const result = { autorizado: true, nome: f.nome_completo, tipo: f.role, acao: tipoFunc, empresa: emp?.nome ?? null };
     recentAccess.set(userId, { result, at: Date.now() });
+    lastRegister.set(userId, Date.now());
     res.json(result); return;
   }
 
@@ -107,8 +125,9 @@ export const validarQR = async (req: Request, res: Response) => {
     } else {
       await sql`UPDATE visitantes SET status='Saiu', hora_saida=NOW() WHERE id=${v.id}`;
     }
-    const result = { autorizado: true, nome: v.nome_completo, tipo: 'visitante', empresa: emp?.nome ?? null };
+    const result = { autorizado: true, nome: v.nome_completo, tipo: 'visitante', acao: tipo, empresa: emp?.nome ?? null };
     recentAccess.set(userId, { result, at: Date.now() });
+    lastRegister.set(userId, Date.now());
     res.json(result); return;
   }
 

@@ -13,7 +13,14 @@ export default function LoginScreen() {
   const [cpf, setCpf]     = useState('');
   const [loading, setLoading] = useState(false);
 
-  const formatCpf = (v: string) => v.replace(/\D/g, '').slice(0, 11);
+  const formatCpf = (v: string) => {
+    const c = v.replace(/\D/g, '').slice(0, 11);
+    let r = c;
+    if (c.length > 3) r = `${c.slice(0, 3)}.${c.slice(3)}`;
+    if (c.length > 6) r = `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6)}`;
+    if (c.length > 9) r = `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6, 9)}-${c.slice(9)}`;
+    return r;
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !cpf.trim()) { Alert.alert('Erro', 'Preencha email e CPF'); return; }
@@ -55,9 +62,9 @@ export default function LoginScreen() {
             <View style={s.inputRow}>
               <CreditCard color={C.muted} size={16} />
               <TextInput
-                style={s.input} placeholder="CPF (somente números)" placeholderTextColor={C.muted}
+                style={s.input} placeholder="000.000.000-00" placeholderTextColor={C.muted}
                 value={cpf} onChangeText={v => setCpf(formatCpf(v))}
-                keyboardType="numeric" maxLength={11}
+                keyboardType="numeric" maxLength={14}
               />
             </View>
 

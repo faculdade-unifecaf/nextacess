@@ -17,6 +17,25 @@ const fmtTelefone = (tel: string) => {
   return tel;
 };
 
+// Máscaras de digitação progressiva
+const maskCnpj = (v: string) => {
+  const c = v.replace(/\D/g, '').slice(0, 14);
+  let r = c;
+  if (c.length > 2)  r = `${c.slice(0, 2)}.${c.slice(2)}`;
+  if (c.length > 5)  r = `${c.slice(0, 2)}.${c.slice(2, 5)}.${c.slice(5)}`;
+  if (c.length > 8)  r = `${c.slice(0, 2)}.${c.slice(2, 5)}.${c.slice(5, 8)}/${c.slice(8)}`;
+  if (c.length > 12) r = `${c.slice(0, 2)}.${c.slice(2, 5)}.${c.slice(5, 8)}/${c.slice(8, 12)}-${c.slice(12)}`;
+  return r;
+};
+
+const maskTelefone = (v: string) => {
+  const c = v.replace(/\D/g, '').slice(0, 11);
+  if (c.length <= 2)  return c.length ? `(${c}` : c;
+  if (c.length <= 6)  return `(${c.slice(0, 2)}) ${c.slice(2)}`;
+  if (c.length <= 10) return `(${c.slice(0, 2)}) ${c.slice(2, 6)}-${c.slice(6)}`;
+  return `(${c.slice(0, 2)}) ${c.slice(2, 7)}-${c.slice(7)}`;
+};
+
 function EmpresaModal({ onClose, onSave, initial }: {
   onClose: () => void;
   onSave: (data: Omit<Empresa, 'id' | 'avatarColor'>) => void;
@@ -38,6 +57,8 @@ function EmpresaModal({ onClose, onSave, initial }: {
 
   const handleSave = () => {
     if (!form.nome || !form.cnpj) { alert('Nome e CNPJ são obrigatórios.'); return; }
+    if (form.cnpj.replace(/\D/g, '').length !== 14) { alert('CNPJ deve conter 14 dígitos.'); return; }
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { alert('E-mail inválido. Verifique o formato (ex: contato@empresa.com).'); return; }
     onSave(form as Omit<Empresa, 'id' | 'avatarColor'>);
     onClose();
   };
@@ -51,7 +72,7 @@ function EmpresaModal({ onClose, onSave, initial }: {
         </div>
         <div className="form-row">
           <div className="form-group"><label>Nome da Empresa *</label><input value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Ex: TechVision Soluções" /></div>
-          <div className="form-group"><label>CNPJ *</label><input value={form.cnpj} onChange={e => set('cnpj', e.target.value)} placeholder="00.000.000/0001-00" /></div>
+          <div className="form-group"><label>CNPJ *</label><input value={form.cnpj} onChange={e => set('cnpj', maskCnpj(e.target.value))} placeholder="00.000.000/0001-00" inputMode="numeric" maxLength={18} /></div>
         </div>
         <div className="form-row">
           <div className="form-group"><label>Andar</label><input type="number" min={1} max={50} value={form.andar} onChange={e => set('andar', parseInt(e.target.value) || 1)} /></div>
@@ -60,7 +81,7 @@ function EmpresaModal({ onClose, onSave, initial }: {
         <div className="form-group"><label>Responsável</label><input value={form.responsavel} onChange={e => set('responsavel', e.target.value)} placeholder="Nome do responsável" /></div>
         <div className="form-row">
           <div className="form-group"><label>E-mail</label><input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="contato@empresa.com" /></div>
-          <div className="form-group"><label>Telefone</label><input value={form.telefone} onChange={e => set('telefone', e.target.value)} placeholder="(11) 0000-0000" /></div>
+          <div className="form-group"><label>Telefone</label><input value={form.telefone} onChange={e => set('telefone', maskTelefone(e.target.value))} placeholder="(11) 90000-0000" inputMode="numeric" maxLength={15} /></div>
         </div>
         <div className="form-group">
           <label>Status</label>

@@ -10,6 +10,24 @@ const fmtCpf = (cpf: string) => {
   return `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6, 9)}-${c.slice(9)}`;
 };
 
+// Máscaras de digitação progressiva
+const maskCpf = (v: string) => {
+  const c = v.replace(/\D/g, '').slice(0, 11);
+  let r = c;
+  if (c.length > 3) r = `${c.slice(0, 3)}.${c.slice(3)}`;
+  if (c.length > 6) r = `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6)}`;
+  if (c.length > 9) r = `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6, 9)}-${c.slice(9)}`;
+  return r;
+};
+
+const maskTelefone = (v: string) => {
+  const c = v.replace(/\D/g, '').slice(0, 11);
+  if (c.length <= 2)  return c.length ? `(${c}` : c;
+  if (c.length <= 6)  return `(${c.slice(0, 2)}) ${c.slice(2)}`;
+  if (c.length <= 10) return `(${c.slice(0, 2)}) ${c.slice(2, 6)}-${c.slice(6)}`;
+  return `(${c.slice(0, 2)}) ${c.slice(2, 7)}-${c.slice(7)}`;
+};
+
 function FuncionarioModal({ onClose, onSave, initial, empresas }: {
   onClose: () => void;
   onSave: (data: Omit<Funcionario, 'id' | 'avatarColor'>) => Promise<void>;
@@ -34,6 +52,14 @@ function FuncionarioModal({ onClose, onSave, initial, empresas }: {
   const handleSave = async () => {
     if (!form.nome_completo || !form.cpf || !form.email || !form.empresa_id) {
       setErrMsg('Nome, CPF, e-mail e empresa são obrigatórios.');
+      return;
+    }
+    if (form.cpf.replace(/\D/g, '').length !== 11) {
+      setErrMsg('CPF deve conter 11 dígitos.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setErrMsg('E-mail inválido. Verifique o formato (ex: nome@empresa.com).');
       return;
     }
     setSaving(true);
@@ -62,11 +88,11 @@ function FuncionarioModal({ onClose, onSave, initial, empresas }: {
         )}
         <div className="form-row">
           <div className="form-group"><label>Nome Completo *</label><input value={form.nome_completo} onChange={e => set('nome_completo', e.target.value)} placeholder="Nome completo" /></div>
-          <div className="form-group"><label>CPF *</label><input value={form.cpf} onChange={e => set('cpf', e.target.value)} placeholder="000.000.000-00" /></div>
+          <div className="form-group"><label>CPF *</label><input value={form.cpf} onChange={e => set('cpf', maskCpf(e.target.value))} placeholder="000.000.000-00" inputMode="numeric" maxLength={14} /></div>
         </div>
         <div className="form-row">
           <div className="form-group"><label>E-mail *</label><input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="funcionario@empresa.com" /></div>
-          <div className="form-group"><label>Telefone</label><input value={form.telefone} onChange={e => set('telefone', e.target.value)} placeholder="(11) 00000-0000" /></div>
+          <div className="form-group"><label>Telefone</label><input value={form.telefone} onChange={e => set('telefone', maskTelefone(e.target.value))} placeholder="(11) 90000-0000" inputMode="numeric" maxLength={15} /></div>
         </div>
         <div className="form-group">
           <label>Empresa *</label>
